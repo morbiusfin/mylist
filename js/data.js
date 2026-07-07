@@ -43,7 +43,7 @@
     { kw: ["pipoca"], char: "🍿", webp: "pipoca" },
     { kw: ["macarrao", "espaguete", "spaghetti", "miojo", "lasanha", "nhoque", "penne", "massa"], char: "🍝", webp: "macarrao" },
     { kw: ["panqueca", "pancake"], char: "🥞", webp: "panqueca" },
-    { kw: ["ovo frito", "ovos", "ovo"], char: "🍳", webp: "ovofrito" },
+    { kw: ["ovo frito", "ovos", "ovo", "egg", "eggs"], char: "🍳", webp: "ovofrito" },
     // padaria
     { kw: ["pao", "paes", "paozinho", "baguete", "frances", "bisnaga", "torrada"], char: "🍞", webp: "pao" },
     { kw: ["croissant"], char: "🥐", webp: null },
@@ -53,7 +53,7 @@
     { kw: ["biscoito", "bolacha", "cookie"], char: "🍪", webp: "biscoito" },
     { kw: ["donut", "rosquinha", "sonho"], char: "🍩", webp: "donut" },
     // frutas
-    { kw: ["maca", "macas"], char: "🍎", webp: "maca" },
+    { kw: ["maca", "macas", "apple"], char: "🍎", webp: "maca" },
     { kw: ["banana", "bananas"], char: "🍌", webp: null },
     { kw: ["uva", "uvas"], char: "🍇", webp: "uva" },
     { kw: ["morango", "morangos"], char: "🍓", webp: "morango" },
@@ -92,10 +92,10 @@
     { kw: ["camarao", "frutos do mar"], char: "🍤", webp: null },
     { kw: ["linguica", "calabresa"], char: "🌭", webp: "cachorroquente" },
     // laticínios / básicos
-    { kw: ["queijo", "mussarela", "muçarela", "parmesao", "requeijao", "ricota"], char: "🧀", webp: "queijo" },
-    { kw: ["leite", "iogurte", "yogurt", "coalhada"], char: "🥛", webp: null },
+    { kw: ["queijo", "cheese", "mussarela", "muçarela", "parmesao", "requeijao", "ricota"], char: "🧀", webp: "queijo" },
+    { kw: ["leite", "milk", "iogurte", "yogurt", "coalhada"], char: "🥛", webp: null },
     { kw: ["manteiga", "margarina"], char: "🧈", webp: null },
-    { kw: ["arroz"], char: "🍚", webp: null },
+    { kw: ["arroz", "rice"], char: "🍚", webp: null },
     { kw: ["feijao", "lentilha", "grao", "grao-de-bico"], char: "🫘", webp: null },
     { kw: ["sal", "tempero"], char: "🧂", webp: "sal" },
     { kw: ["mel"], char: "🍯", webp: null },
@@ -108,7 +108,7 @@
     { kw: ["suco", "sucos", "polpa"], char: "🧃", webp: "suco" },
     { kw: ["refrigerante", "refri", "coca", "guarana", "soda"], char: "🥤", webp: null },
     { kw: ["agua", "mineral"], char: "💧", webp: null },
-    { kw: ["cerveja", "breja", "chopp"], char: "🍺", webp: null },
+    { kw: ["cerveja", "breja", "chopp", "beer"], char: "🍺", webp: null },
     { kw: ["vinho", "espumante"], char: "🍷", webp: "vinho" },
     { kw: ["achocolatado", "chocolate", "nescau", "toddy"], char: "🍫", webp: null },
     // doces
@@ -125,14 +125,17 @@
   ];
   const DEFAULT_EMOJI = { char: "🛒", webp: "carrinho" };
 
-  function matchEmoji(nome) {
-    const n = norm(nome);
-    if (!n) return DEFAULT_EMOJI;
-    const tokens = n.split(/[^a-z0-9]+/).filter(Boolean);
+  // char -> webp animado (dos 57 baixados) p/ animar também os resultados do banco geral
+  const CHAR2WEBP = { "🛒": "carrinho", "👋": "aceno", "✨": "brilho", "✅": "check",
+    "⭐": "estrela", "🎉": "festa", "🚀": "foguete", "😋": "salivando" };
+  FOODMAP.forEach(e => { if (e.webp && !CHAR2WEBP[e.char]) CHAR2WEBP[e.char] = e.webp; });
+  const withWebp = (char) => ({ char, webp: CHAR2WEBP[char] || null });
+
+  // 1) grocery curado (garante o emoji + a versão animada certa)
+  function foodMatch(n, tokens) {
     for (const e of FOODMAP) {
       for (const kwRaw of e.kw) {
         const kw = norm(kwRaw);
-        // frase com espaço → substring direto
         if (kw.includes(" ")) { if (n.includes(kw)) return e; continue; }
         for (const t of tokens) {
           if (t === kw) return e;
@@ -141,7 +144,67 @@
         }
       }
     }
-    return DEFAULT_EMOJI;
+    return null;
+  }
+
+  // distância de edição (p/ "o mais próximo do que foi digitado")
+  function lev(a, b) {
+    const m = a.length, n2 = b.length;
+    if (!m) return n2; if (!n2) return m;
+    const dp = new Array(n2 + 1); for (let j = 0; j <= n2; j++) dp[j] = j;
+    for (let i = 1; i <= m; i++) {
+      let prev = dp[0]; dp[0] = i;
+      for (let j = 1; j <= n2; j++) {
+        const tmp = dp[j];
+        dp[j] = Math.min(dp[j] + 1, dp[j - 1] + 1, prev + (a[i - 1] === b[j - 1] ? 0 : 1));
+        prev = tmp;
+      }
+    }
+    return dp[n2];
+  }
+
+  // 2) banco geral de emojis (pt + en) por nome, com pontuação + fuzzy
+  function dbMatch(n, tokens) {
+    const DB = window.EMOJIDB;
+    if (!DB || !DB.length) return null;
+    let best = null, bestScore = 0;
+    for (const row of DB) {
+      const label = row[1], kw = row[2];
+      let sc = 0;
+      if (label === n) sc = 1000;                       // nome exato = topo
+      else {
+        const kws = kw.split(" ");
+        for (const t of tokens) {
+          if (!t) continue;
+          if (kws.includes(t)) sc += 12;
+          else if (t.length >= 4 && kws.some(w => w.length >= 4 && (w.startsWith(t) || t.startsWith(w)))) sc += 6;
+          else if (t.length >= 4 && kw.includes(t)) sc += 3;
+        }
+        if (label.startsWith(n)) sc += 8;
+        else if (label.includes(n)) sc += 4;
+        if (sc > 0) sc += Math.max(0, 3 - label.split(" ").length); // prefere rótulo curto
+      }
+      if (sc > bestScore) { bestScore = sc; best = row; if (sc >= 1000) break; }
+    }
+    if (best && bestScore > 0) return withWebp(best[0]);
+
+    // nada bateu por palavra → o mais próximo do que foi digitado (rótulo pt E palavras pt/en)
+    let fb = null, fd = Infinity;
+    for (const row of DB) {
+      let cand = lev(n, row[1]);
+      for (const w of row[1].split(" ")) { const d = lev(n, w); if (d < cand) cand = d; }
+      for (const w of row[2].split(" ")) { if (Math.abs(w.length - n.length) <= 2) { const d = lev(n, w); if (d < cand) cand = d; } }
+      if (cand < fd) { fd = cand; fb = row; if (fd === 0) break; }
+    }
+    if (fb && fd <= Math.max(2, Math.floor(n.length * 0.34))) return withWebp(fb[0]);
+    return null;
+  }
+
+  function matchEmoji(nome) {
+    const n = norm(nome);
+    if (!n) return DEFAULT_EMOJI;
+    const tokens = n.split(/[^a-z0-9]+/).filter(Boolean);
+    return foodMatch(n, tokens) || dbMatch(n, tokens) || DEFAULT_EMOJI;
   }
 
   /* ---------- parse "2 tomate" / "tomate x3" / "3x leite" ---------- */

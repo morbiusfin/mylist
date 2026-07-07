@@ -5,9 +5,17 @@
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
-  const APP_VERSION = "1.0.0";
-  const VERSION_NOTES = "Nasceu o Mylist 🛒";
+  const APP_VERSION = "1.1.0";
+  const VERSION_NOTES = "Emoji pra tudo + 12 temas 🎨";
   const CHANGELOG = [
+    {
+      v: "1.1.0",
+      itens: [
+        "Agora <b>qualquer coisa</b> que você digitar ganha um emoji pelo nome — comida, produto de limpeza, pet, o que for. Se não achar igual, pega o <b>mais parecido</b> 🎯",
+        "Busca de emoji entende <b>português e inglês</b> (“maçã” ou “apple”)",
+        "<b>Aparência</b> nova (menu → Aparência): modo <b>claro ou escuro</b> + <b>12 cores</b> de tema pra deixar do seu jeito 🎨"
+      ]
+    },
     {
       v: "1.0.0",
       itens: [
@@ -339,6 +347,18 @@
     clearTimeout(toastT); toastT = setTimeout(() => t.classList.add("hidden"), 3200);
   }
 
+  /* ---------- aparência (tema) ---------- */
+  function openTheme() { renderTheme(); openModal("#themeModal"); }
+  function renderTheme() {
+    const cur = window.MyTheme.get();
+    $$("#modeSeg .seg-btn").forEach(b => b.classList.toggle("active", b.dataset.mode === cur.mode));
+    $("#swatches").innerHTML = window.MyTheme.COLORS.map(c =>
+      `<button class="swatch ${c.id === cur.color ? "active" : ""}" data-color="${c.id}">
+        <span class="swatch-dot" style="background:${c.hex}"></span>
+        <span class="swatch-name">${c.nome}</span>
+      </button>`).join("");
+  }
+
   function switchScreen(id) {
     $$(".screen").forEach(s => s.classList.toggle("active", s.id === id));
     $$(".tab").forEach(t => t.classList.toggle("active", t.dataset.scr === id));
@@ -389,6 +409,9 @@
     $("#miImport").addEventListener("click", () => $("#importFile").click());
     $("#importFile").addEventListener("change", e => { if (e.target.files[0]) importBackup(e.target.files[0]); e.target.value = ""; });
     $("#miClear").addEventListener("click", () => { if (confirm("Limpar a lista atual? (o histórico não é afetado)")) { S.clearLista(); renderLista(); closeModal("#menuModal"); toast("Lista limpa 🧹"); } });
+    $("#miTheme").addEventListener("click", () => { closeModal("#menuModal"); openTheme(); });
+    $("#modeSeg").addEventListener("click", e => { const b = e.target.closest(".seg-btn"); if (b) { window.MyTheme.save({ ...window.MyTheme.get(), mode: b.dataset.mode }); renderTheme(); } });
+    $("#swatches").addEventListener("click", e => { const b = e.target.closest(".swatch"); if (b) { window.MyTheme.save({ ...window.MyTheme.get(), color: b.dataset.color }); renderTheme(); } });
     $("#miNews").addEventListener("click", () => { closeModal("#menuModal"); showWhatsNew(); });
     $("#miAbout").addEventListener("click", () => { toast("Mylist v" + APP_VERSION + " · " + VERSION_NOTES); });
     $("#miVersion").textContent = "v" + APP_VERSION;

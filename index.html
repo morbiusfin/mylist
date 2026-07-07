@@ -12,6 +12,7 @@
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
   <link rel="icon" href="icons/icon-192.png" />
   <link rel="stylesheet" href="css/styles.css" />
+  <script src="js/theme.js"></script>
 </head>
 <body>
   <!-- ===== HEADER ===== -->
@@ -162,6 +163,7 @@
         <button class="menu-item" id="miExport"><span class="mi-ic">💾</span><span><b>Exportar backup</b><i>salva tudo num arquivo</i></span></button>
         <button class="menu-item" id="miImport"><span class="mi-ic">📥</span><span><b>Importar backup</b><i>restaura de um arquivo</i></span></button>
         <button class="menu-item" id="miClear"><span class="mi-ic">🧹</span><span><b>Limpar lista atual</b><i>não mexe no histórico</i></span></button>
+        <button class="menu-item" id="miTheme"><span class="mi-ic">🎨</span><span><b>Aparência</b><i>tema claro/escuro e 12 cores</i></span></button>
         <button class="menu-item" id="miNews"><span class="mi-ic">✨</span><span><b>Novidades</b><i>o que mudou</i></span></button>
         <button class="menu-item" id="miAbout"><span class="mi-ic">🛒</span><span><b>Sobre o Mylist</b><i id="miVersion">v1.0.0</i></span></button>
       </div>
@@ -170,6 +172,25 @@
       </div>
     </div>
     <input id="importFile" type="file" accept="application/json,.json" hidden />
+  </div>
+
+  <!-- ===== MODAL: aparência (tema + cores) ===== -->
+  <div id="themeModal" class="modal hidden">
+    <div class="sheet">
+      <div class="sheet-head">
+        <h2>Aparência</h2>
+        <button type="button" class="sheet-x" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div class="sheet-body">
+        <span class="field-lbl">Modo</span>
+        <div class="seg" id="modeSeg">
+          <button type="button" class="seg-btn" data-mode="light">☀️ Claro</button>
+          <button type="button" class="seg-btn" data-mode="dark">🌙 Escuro</button>
+        </div>
+        <span class="field-lbl">Cor do tema</span>
+        <div class="swatches" id="swatches"></div>
+      </div>
+    </div>
   </div>
 
   <!-- ===== POPUP: novidades ===== -->
@@ -196,6 +217,7 @@
   <!-- ===== TOAST ===== -->
   <div id="toast" class="toast hidden"></div>
 
+  <script src="js/emojidb.js"></script>
   <script src="js/data.js"></script>
   <script src="js/app.js"></script>
 </body>

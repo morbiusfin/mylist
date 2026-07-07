@@ -1,5 +1,5 @@
 /* Service Worker — network-first (sempre busca a versão nova; cache só p/ offline) */
-const CACHE = "mylist-v1";
+const CACHE = "mylist-v2";
 const EMOJIS = [
   "abacate","abacaxi","aceno","alho","bacon","batata","biscoito","brilho","brocolis","burrito",
   "cachorroquente","cafe","carrinho","cebola","cenoura","cereja","cha","check","cogumelo","donut",
@@ -11,7 +11,7 @@ const EMOJIS = [
 const ASSETS = [
   "./", "./index.html", "./privacidade.html", "./termos.html",
   "./css/styles.css",
-  "./js/data.js", "./js/app.js",
+  "./js/theme.js", "./js/emojidb.js", "./js/data.js", "./js/app.js",
   "./manifest.webmanifest",
   "./icons/icon-192.png", "./icons/icon-512.png"
 ].concat(EMOJIS.map(n => "./emoji/" + n + ".webp"));

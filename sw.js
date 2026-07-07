@@ -1,5 +1,5 @@
 /* Service Worker — network-first (sempre busca a versão nova; cache só p/ offline) */
-const CACHE = "mylist-v2";
+const CACHE = "mylist-v3";
 const EMOJIS = [
   "abacate","abacaxi","aceno","alho","bacon","batata","biscoito","brilho","brocolis","burrito",
   "cachorroquente","cafe","carrinho","cebola","cenoura","cereja","cha","check","cogumelo","donut",
@@ -11,7 +11,7 @@ const EMOJIS = [
 const ASSETS = [
   "./", "./index.html", "./privacidade.html", "./termos.html",
   "./css/styles.css",
-  "./js/theme.js", "./js/emojidb.js", "./js/data.js", "./js/app.js",
+  "./js/theme.js", "./js/emojidb.js", "./js/data.js", "./js/cloud.js", "./js/app.js",
   "./manifest.webmanifest",
   "./icons/icon-192.png", "./icons/icon-512.png"
 ].concat(EMOJIS.map(n => "./emoji/" + n + ".webp"));
@@ -26,7 +26,15 @@ self.addEventListener("activate", (e) => {
 self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET") return;
   const url = new URL(e.request.url);
-  if (url.origin !== self.location.origin) return; // outras origens: direto pra rede
+  // CDN versionado (supabase-js) → cache-first (conteúdo imutável)
+  if (url.hostname === "cdn.jsdelivr.net") {
+    e.respondWith(caches.match(e.request).then(hit => hit || fetch(e.request).then(res => {
+      const copy = res.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {}); return res;
+    })));
+    return;
+  }
+  // qualquer outra origem (ex.: API REST/Realtime do Supabase) → direto pra rede, SEM cache
+  if (url.origin !== self.location.origin) return;
   // network-first: pega a versão mais nova; se offline, usa cache
   e.respondWith(
     fetch(e.request).then(res => {

@@ -18,7 +18,8 @@
       return d;
     } catch (e) { return structuredClone(DEFAULT); }
   }
-  function save() { try { localStorage.setItem(KEY, JSON.stringify(DATA)); } catch (e) {} }
+  let cbSave = null;
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(DATA)); } catch (e) {} if (cbSave) { try { cbSave(); } catch (e) {} } }
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
   /* ---------- normalização p/ matching de emoji ---------- */
@@ -296,6 +297,8 @@
   window.MyStore = {
     get raw() { return DATA; },
     save,
+    setOnSave(fn) { cbSave = fn; },
+    replaceAll(d) { if (d && Array.isArray(d.compras)) { DATA.lista = Array.isArray(d.lista) ? d.lista : []; DATA.compras = d.compras; try { localStorage.setItem(KEY, JSON.stringify(DATA)); } catch (e) {} } },
     addItem, findItem, toggleItem, setPrice, setQty, removeItem, clearLista,
     finalizarCompra, deleteCompra, repetirCompra,
     comprasSorted, mercados, mercadoStats, monthTotal, grandTotal,

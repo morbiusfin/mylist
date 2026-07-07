@@ -359,6 +359,68 @@
       </button>`).join("");
   }
 
+  /* ---------- nuvem / conta compartilhada ---------- */
+  let cloudActive = false, applyingRemote = false, pushT = null;
+
+  const docFromLocal = () => ({ lista: S.raw.lista, compras: S.raw.compras });
+  function mergeDoc(remote) {
+    if (!remote) return;
+    const byId = (arr) => { const m = {}; (arr || []).forEach(x => { if (x && x.id) m[x.id] = x; }); return m; };
+    const rl = byId(remote.lista), ll = byId(S.raw.lista);
+    const lista = [...new Set([...Object.keys(rl), ...Object.keys(ll)])].map(id => rl[id] || ll[id]);
+    const rc = byId(remote.compras), lc = byId(S.raw.compras);
+    const compras = [...new Set([...Object.keys(rc), ...Object.keys(lc)])].map(id => rc[id] || lc[id]);
+    S.replaceAll({ lista, compras });
+  }
+  function schedulePush() {
+    if (!cloudActive || applyingRemote) return;
+    clearTimeout(pushT);
+    pushT = setTimeout(() => { window.MyCloud.push(docFromLocal()); }, 700);
+  }
+  function onRemote(data) { applyingRemote = true; mergeDoc(data); applyingRemote = false; renderAll(); toast("Lista atualizada ☁️"); }
+  async function activateCloud() {
+    const g = await window.MyCloud.ensureGrupo(); if (!g) return;
+    applyingRemote = true; mergeDoc(await window.MyCloud.pull()); applyingRemote = false;
+    renderAll(); cloudActive = true;
+    window.MyCloud.push(docFromLocal());          // semeia a nuvem com o merge local
+    window.MyCloud.subscribe(onRemote);
+    refreshContaUI();
+  }
+  function refreshContaUI() {
+    if (!$("#contaModal")) return;
+    const logged = window.MyCloud.isLoggedIn();
+    $("#contaOut").classList.toggle("hidden", logged);
+    $("#contaIn").classList.toggle("hidden", !logged);
+    if (logged) $("#cWho").textContent = window.MyCloud.email() || "";
+    $("#cInvite").value = ""; $("#cMsg").textContent = "";
+  }
+  function initCloud() {
+    if (!(window.MyCloud && window.MyCloud.isConfigured())) return;   // inerte se não configurado
+    $("#miConta").classList.remove("hidden");
+    S.setOnSave(schedulePush);
+    window.MyCloud.init().then(async (ok) => {
+      if (!ok) return;
+      window.MyCloud.onAuth(() => { if (!window.MyCloud.isLoggedIn()) cloudActive = false; refreshContaUI(); });
+      if (window.MyCloud.isLoggedIn()) await activateCloud();
+    });
+    $("#miConta").addEventListener("click", () => { closeModal("#menuModal"); refreshContaUI(); openModal("#contaModal"); });
+    $("#cLogin").addEventListener("click", async () => {
+      const r = await window.MyCloud.signIn($("#cEmail").value.trim(), $("#cPass").value);
+      if (r.ok) { await activateCloud(); toast("Conectado ☁️"); } else $("#cMsg").textContent = "Não entrou: " + r.error;
+    });
+    $("#cSignup").addEventListener("click", async () => {
+      const r = await window.MyCloud.signUp($("#cEmail").value.trim(), $("#cPass").value);
+      $("#cMsg").textContent = r.ok ? (r.needsConfirm ? "Confirme o email e depois entre." : "Conta criada! Toque em Entrar.") : ("Erro: " + r.error);
+    });
+    $("#cGenInvite").addEventListener("click", async () => { $("#cInvite").value = (await window.MyCloud.gerarConvite()) || "erro"; });
+    $("#cJoin").addEventListener("click", async () => {
+      const r = await window.MyCloud.entrarPorCodigo($("#cJoinCode").value);
+      if (r.ok) { applyingRemote = true; mergeDoc(await window.MyCloud.pull()); applyingRemote = false; renderAll(); cloudActive = true; window.MyCloud.subscribe(onRemote); toast("Entrou na conta compartilhada 🎉"); closeModal("#contaModal"); }
+      else toast("Código inválido 😕");
+    });
+    $("#cLogout").addEventListener("click", async () => { await window.MyCloud.signOut(); cloudActive = false; refreshContaUI(); toast("Saiu da conta"); });
+  }
+
   function switchScreen(id) {
     $$(".screen").forEach(s => s.classList.toggle("active", s.id === id));
     $$(".tab").forEach(t => t.classList.toggle("active", t.dataset.scr === id));
@@ -446,6 +508,7 @@
     }
     checkProdVersion();
     document.addEventListener("visibilitychange", () => { if (!document.hidden) checkProdVersion(); });
+    initCloud();
   }
 
   window.MyApp = { emojiFallback };

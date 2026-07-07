@@ -164,6 +164,7 @@
         <button class="menu-item" id="miImport"><span class="mi-ic">📥</span><span><b>Importar backup</b><i>restaura de um arquivo</i></span></button>
         <button class="menu-item" id="miClear"><span class="mi-ic">🧹</span><span><b>Limpar lista atual</b><i>não mexe no histórico</i></span></button>
         <button class="menu-item" id="miTheme"><span class="mi-ic">🎨</span><span><b>Aparência</b><i>tema claro/escuro e 12 cores</i></span></button>
+        <button class="menu-item hidden" id="miConta"><span class="mi-ic">👥</span><span><b>Conta compartilhada</b><i>lista junto com alguém, ao vivo</i></span></button>
         <button class="menu-item" id="miNews"><span class="mi-ic">✨</span><span><b>Novidades</b><i>o que mudou</i></span></button>
         <button class="menu-item" id="miAbout"><span class="mi-ic">🛒</span><span><b>Sobre o Mylist</b><i id="miVersion">v1.0.0</i></span></button>
       </div>
@@ -189,6 +190,51 @@
         </div>
         <span class="field-lbl">Cor do tema</span>
         <div class="swatches" id="swatches"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: conta compartilhada ===== -->
+  <div id="contaModal" class="modal hidden">
+    <div class="sheet">
+      <div class="sheet-head">
+        <h2>Conta compartilhada</h2>
+        <button type="button" class="sheet-x" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div class="sheet-body">
+        <!-- deslogado -->
+        <div id="contaOut">
+          <p class="upd-txt">Entre pra dividir a <b>mesma lista e histórico</b> com outra pessoa — um adiciona, aparece no outro na hora ☁️</p>
+          <label class="field"><span class="field-lbl">Email</span>
+            <input id="cEmail" class="field-input" type="email" inputmode="email" autocomplete="email" placeholder="voce@email.com" autocapitalize="none" spellcheck="false" /></label>
+          <label class="field"><span class="field-lbl">Senha</span>
+            <input id="cPass" class="field-input" type="password" autocomplete="current-password" placeholder="sua senha" /></label>
+          <button id="cLogin" class="btn-primary">Entrar</button>
+          <button id="cSignup" class="btn-ghost" style="margin-top:10px">Criar conta</button>
+          <p id="cMsg" class="upd-txt" style="min-height:1em"></p>
+        </div>
+        <!-- logado -->
+        <div id="contaIn" class="hidden">
+          <div class="cm-meta">
+            <div class="cm-pill">👤 <b id="cWho"></b></div>
+            <div class="cm-pill" id="cSyncPill">☁️ sincronizando</div>
+          </div>
+          <span class="field-lbl">Convide seu par (mande esse código)</span>
+          <div class="add-bar">
+            <input id="cInvite" class="add-input" readonly placeholder="toque em gerar →" />
+            <button id="cGenInvite" class="add-btn" aria-label="Gerar código">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            </button>
+          </div>
+          <span class="field-lbl">Ou entre no código de alguém</span>
+          <div class="add-bar">
+            <input id="cJoinCode" class="add-input" placeholder="código do convite" autocapitalize="characters" autocomplete="off" spellcheck="false" />
+            <button id="cJoin" class="add-btn" aria-label="Entrar no código">
+              <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </button>
+          </div>
+          <button id="cLogout" class="btn-ghost" style="margin-top:8px">Sair da conta</button>
+        </div>
       </div>
     </div>
   </div>
@@ -219,6 +265,7 @@
 
   <script src="js/emojidb.js"></script>
   <script src="js/data.js"></script>
+  <script src="js/cloud.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

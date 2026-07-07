@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+  <meta name="theme-color" content="#0a1710" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Mylist" />
+  <title>Mylist — lista de compras</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="icon" href="icons/icon-192.png" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <!-- ===== HEADER ===== -->
+  <header class="app-header">
+    <div class="hdr-brand">
+      <img id="hdrMascot" class="emoji-anim hdr-mascot" src="emoji/carrinho.webp" alt="" aria-hidden="true" draggable="false" />
+      <div class="hdr-titles">
+        <h1 class="hdr-name">Mylist</h1>
+        <p class="hdr-sub" id="hdrSub">sua feira, organizada</p>
+      </div>
+    </div>
+    <button id="btnMenu" class="icon-btn" aria-label="Menu">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
+    </button>
+  </header>
+
+  <main class="app-main">
+    <!-- ===================== TELA: LISTA ===================== -->
+    <section id="scrLista" class="screen active">
+      <div class="list-summary" id="listSummary">
+        <div class="ls-cell"><span class="ls-num" id="lsCount">0</span><span class="ls-lbl">itens</span></div>
+        <div class="ls-cell"><span class="ls-num" id="lsDone">0</span><span class="ls-lbl">no carrinho</span></div>
+        <div class="ls-cell ls-total"><span class="ls-num" id="lsTotal">R$ 0</span><span class="ls-lbl">parcial</span></div>
+      </div>
+
+      <div class="add-bar">
+        <span class="add-emoji" id="addEmoji"><img class="emoji-anim" src="emoji/carrinho.webp" alt="" aria-hidden="true" draggable="false" /></span>
+        <input id="addInput" class="add-input" type="text" inputmode="text" enterkeyhint="done"
+               placeholder="Adicionar item… (ex.: 2 tomate)" autocomplete="off" autocorrect="off" spellcheck="false" />
+        <button id="addBtn" class="add-btn" aria-label="Adicionar">
+          <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+      </div>
+
+      <div id="listItems" class="list-items"></div>
+
+      <div id="listEmpty" class="empty-state hidden">
+        <img class="emoji-anim empty-emoji" src="emoji/salada.webp" alt="" aria-hidden="true" draggable="false" />
+        <p class="empty-title">Lista vazia</p>
+        <p class="empty-sub">Adiciona os itens que faltam em casa 🛒</p>
+      </div>
+    </section>
+
+    <!-- ===================== TELA: HISTÓRICO ===================== -->
+    <section id="scrHist" class="screen">
+      <div class="hist-head">
+        <h2 class="scr-title">Histórico</h2>
+        <div class="hist-kpis">
+          <div class="hk"><span class="hk-num" id="hkMonth">R$ 0</span><span class="hk-lbl" id="hkMonthLbl">este mês</span></div>
+          <div class="hk"><span class="hk-num" id="hkAll">R$ 0</span><span class="hk-lbl">total geral</span></div>
+        </div>
+      </div>
+      <div id="histFilters" class="chips"></div>
+      <div id="histList" class="hist-list"></div>
+      <div id="histEmpty" class="empty-state hidden">
+        <img class="emoji-anim empty-emoji" src="emoji/recibo.webp" onerror="this.replaceWith(document.createTextNode('🧾'))" alt="" aria-hidden="true" draggable="false" />
+        <p class="empty-title">Nenhuma compra ainda</p>
+        <p class="empty-sub">Finalize uma lista pra ela virar histórico</p>
+      </div>
+    </section>
+
+    <!-- ===================== TELA: MERCADOS ===================== -->
+    <section id="scrMerc" class="screen">
+      <h2 class="scr-title">Mercados</h2>
+      <div id="mercList" class="merc-list"></div>
+      <div id="mercEmpty" class="empty-state hidden">
+        <img class="emoji-anim empty-emoji" src="emoji/carrinho.webp" alt="" aria-hidden="true" draggable="false" />
+        <p class="empty-title">Sem mercados</p>
+        <p class="empty-sub">Aparecem aqui quando você registra compras</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===== AÇÃO FIXA: finalizar compra ===== -->
+  <button id="btnFinalizar" class="fab-finalizar hidden">
+    <img class="emoji-anim" src="emoji/check.webp" alt="" aria-hidden="true" draggable="false" />
+    <span>Finalizar compra <b id="finCount">0</b></span>
+  </button>
+
+  <!-- ===== TAB BAR ===== -->
+  <nav class="tabbar">
+    <button class="tab active" data-scr="scrLista">
+      <span class="tab-ic">🛒</span><span class="tab-lbl">Lista</span>
+    </button>
+    <button class="tab" data-scr="scrHist">
+      <span class="tab-ic">📅</span><span class="tab-lbl">Histórico</span>
+    </button>
+    <button class="tab" data-scr="scrMerc">
+      <span class="tab-ic">🏪</span><span class="tab-lbl">Mercados</span>
+    </button>
+  </nav>
+
+  <!-- ===== MODAL: finalizar compra ===== -->
+  <div id="finModal" class="modal hidden">
+    <div class="sheet">
+      <div class="sheet-head">
+        <h2>Finalizar compra</h2>
+        <button type="button" class="sheet-x" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div class="sheet-body">
+        <label class="field">
+          <span class="field-lbl">Mercado</span>
+          <input id="finMercado" class="field-input" list="mercadosDL" type="text" placeholder="Ex.: Assaí, Carrefour…" autocomplete="off" />
+          <datalist id="mercadosDL"></datalist>
+        </label>
+        <div id="finMercChips" class="chips chips-sm"></div>
+        <label class="field">
+          <span class="field-lbl">Data</span>
+          <input id="finData" class="field-input" type="date" />
+        </label>
+        <div class="fin-preview">
+          <div class="fin-preview-head"><span id="finPvCount">0 itens</span><b id="finPvTotal">R$ 0,00</b></div>
+          <div id="finPvItems" class="fin-preview-items"></div>
+        </div>
+      </div>
+      <div class="sheet-foot">
+        <button id="finConfirm" class="btn-primary">Salvar compra</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: detalhe da compra ===== -->
+  <div id="compraModal" class="modal hidden">
+    <div class="sheet">
+      <div class="sheet-head">
+        <h2 id="cmTitle">Compra</h2>
+        <button type="button" class="sheet-x" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div class="sheet-body">
+        <div id="cmMeta" class="cm-meta"></div>
+        <div id="cmItems" class="cm-items"></div>
+      </div>
+      <div class="sheet-foot sheet-foot-row">
+        <button id="cmRepetir" class="btn-ghost">Repetir na lista</button>
+        <button id="cmDelete" class="btn-danger">Excluir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MENU (bottom sheet) ===== -->
+  <div id="menuModal" class="modal hidden">
+    <div class="sheet">
+      <div class="sheet-head">
+        <h2>Menu</h2>
+        <button type="button" class="sheet-x" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div class="sheet-body">
+        <button class="menu-item" id="miExport"><span class="mi-ic">💾</span><span><b>Exportar backup</b><i>salva tudo num arquivo</i></span></button>
+        <button class="menu-item" id="miImport"><span class="mi-ic">📥</span><span><b>Importar backup</b><i>restaura de um arquivo</i></span></button>
+        <button class="menu-item" id="miClear"><span class="mi-ic">🧹</span><span><b>Limpar lista atual</b><i>não mexe no histórico</i></span></button>
+        <button class="menu-item" id="miNews"><span class="mi-ic">✨</span><span><b>Novidades</b><i>o que mudou</i></span></button>
+        <button class="menu-item" id="miAbout"><span class="mi-ic">🛒</span><span><b>Sobre o Mylist</b><i id="miVersion">v1.0.0</i></span></button>
+      </div>
+      <div class="sheet-foot sheet-foot-links">
+        <a href="privacidade.html">Privacidade</a><span>·</span><a href="termos.html">Termos</a>
+      </div>
+    </div>
+    <input id="importFile" type="file" accept="application/json,.json" hidden />
+  </div>
+
+  <!-- ===== POPUP: novidades ===== -->
+  <div id="wnModal" class="modal hidden">
+    <div class="sheet sheet-center">
+      <img class="emoji-anim wn-spark" src="emoji/brilho.webp" alt="" aria-hidden="true" draggable="false" />
+      <h2 id="wnTitle">Novidades</h2>
+      <div id="wnBody" class="wn-body"></div>
+      <button id="wnClose" class="btn-primary">Boa!</button>
+    </div>
+  </div>
+
+  <!-- ===== POPUP: atualização disponível ===== -->
+  <div id="updModal" class="modal hidden">
+    <div class="sheet sheet-center">
+      <img class="emoji-anim wn-spark" src="emoji/foguete.webp" alt="" aria-hidden="true" draggable="false" />
+      <h2>Atualização disponível</h2>
+      <p class="upd-txt">Tem uma versão nova do Mylist. Atualize pra pegar as melhorias.</p>
+      <button id="updBtn" class="btn-primary">Atualizar agora</button>
+      <button id="updLater" class="btn-ghost">Depois</button>
+    </div>
+  </div>
+
+  <!-- ===== TOAST ===== -->
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

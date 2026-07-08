@@ -298,6 +298,24 @@
   }
   function monthTotal(ym) { return DATA.compras.filter(c => c.data.slice(0, 7) === ym).reduce((s, c) => s + c.total, 0); }
   function grandTotal() { return DATA.compras.reduce((s, c) => s + c.total, 0); }
+  function monthlySeries(n) {
+    const out = [], now = new Date();
+    for (let i = n - 1; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const ym = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+      out.push({ ym, total: monthTotal(ym) });
+    }
+    return out;
+  }
+  function topItens(n) {
+    const map = {};
+    DATA.compras.forEach(c => c.itens.forEach(it => {
+      const k = norm(it.nome); if (!k) return;
+      const m = map[k] || (map[k] = { nome: it.nome, vezes: 0, qtd: 0, gasto: 0 });
+      m.vezes++; m.qtd += it.qtd; m.gasto += (it.preco || 0) * it.qtd;
+    }));
+    return Object.values(map).sort((a, b) => b.vezes - a.vezes || b.gasto - a.gasto).slice(0, n || 5);
+  }
 
   /* ---------- backup ---------- */
   function exportData() { return JSON.stringify({ app: "mylist", v: 1, exportedAt: new Date().toISOString(), data: DATA }, null, 2); }
@@ -319,7 +337,7 @@
     addItem, findItem, toggleItem, setPrice, setQty, removeItem, removeItems, restoreItems, clearLista,
     renameItem,
     finalizarCompra, deleteCompra, repetirCompra,
-    comprasSorted, mercados, mercadoStats, monthTotal, grandTotal, learnedNames, lastPrice,
+    comprasSorted, mercados, mercadoStats, monthTotal, grandTotal, monthlySeries, topItens, learnedNames, lastPrice,
     matchEmoji, parseEntry, norm,
     exportData, importData
   };

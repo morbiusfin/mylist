@@ -5,9 +5,17 @@
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
-  const APP_VERSION = "1.6.1";
-  const VERSION_NOTES = "Tela de conta nova + convite com prazo ⏳";
+  const APP_VERSION = "1.7.0";
+  const VERSION_NOTES = "Página de Insights + cards novos 📊";
   const CHANGELOG = [
+    {
+      v: "1.7.0",
+      itens: [
+        "Nova aba <b>Insights</b> 📊 — gráfico de <b>gasto por mês</b>, barras <b>por mercado</b>, seus <b>itens campeões</b> e frases com sacadas dos seus gastos",
+        "Cards do topo (itens / no carrinho / parcial) mais <b>bonitos e profissionais</b> ✨",
+        "KPIs de total gasto, nº de compras e ticket médio"
+      ]
+    },
     {
       v: "1.6.0",
       itens: [
@@ -103,6 +111,7 @@
     return d.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
   }
   function dLabel(iso) { const [y, m, d] = iso.split("-"); return `${d}/${m}`; }
+  function mShort(ym) { const [y, m] = ym.split("-").map(Number); return new Date(y, m - 1, 1).toLocaleDateString("pt-BR", { month: "short" }).replace(".", ""); }
   const todayISO = () => new Date().toISOString().slice(0, 10);
   const thisYM = () => todayISO().slice(0, 7);
 
@@ -355,6 +364,60 @@
   }
 
   /* =========================================================
+     TELA: INSIGHTS
+  ========================================================= */
+  function renderInsights() {
+    const compras = S.raw.compras;
+    if (!compras.length) { $("#insEmpty").classList.remove("hidden"); $("#insContent").classList.add("hidden"); return; }
+    $("#insEmpty").classList.add("hidden"); $("#insContent").classList.remove("hidden");
+
+    const total = S.grandTotal(), n = compras.length;
+    $("#insTotal").textContent = moneyShort(total);
+    $("#insCount").textContent = n;
+    $("#insAvg").textContent = moneyShort(n ? total / n : 0);
+
+    // gasto por mês (últimos 6)
+    const series = S.monthlySeries(6);
+    const maxV = Math.max(1, ...series.map(s => s.total));
+    $("#insMonths").innerHTML = series.map(s => {
+      const h = s.total ? Math.max(Math.round(s.total / maxV * 100), 5) : 0;
+      return `<div class="bar-col">
+        <span class="bar-val">${s.total ? moneyShort(s.total) : ""}</span>
+        <div class="bar-track"><div class="bar-fill" style="height:${h}%"></div></div>
+        <span class="bar-lbl">${mShort(s.ym)}</span>
+      </div>`;
+    }).join("");
+
+    // por mercado
+    const ms = S.mercadoStats().slice(0, 6);
+    const maxM = Math.max(1, ...ms.map(m => m.total));
+    $("#insMarkets").innerHTML = ms.map(m => `<div class="hbar-row">
+      <span class="hbar-name">${esc(m.nome)}</span>
+      <div class="hbar-track"><div class="hbar-fill" style="width:${Math.max(Math.round(m.total / maxM * 100), 6)}%"></div></div>
+      <span class="hbar-val">${money(m.total)}</span>
+    </div>`).join("");
+
+    // você compra muito
+    const tops = S.topItens(5);
+    $("#insTop").innerHTML = tops.map(t => {
+      const em = S.matchEmoji(t.nome);
+      return `<div class="top-row"><span class="top-emoji">${emojiHTML(em)}</span>
+        <span class="top-name">${esc(t.nome)}</span>
+        <span class="top-count">${t.vezes}×</span>
+        <span class="top-gasto">${t.gasto ? money(t.gasto) : ""}</span></div>`;
+    }).join("");
+
+    // insights em texto
+    const bits = [];
+    const best = [...series].sort((a, b) => b.total - a.total)[0];
+    if (best && best.total) bits.push(`📈 Maior gasto foi em <b>${ymLabel(best.ym)}</b> (${money(best.total)}).`);
+    if (ms[0]) bits.push(`🏪 Você mais compra no <b>${esc(ms[0].nome)}</b> — ${money(ms[0].total)} no total.`);
+    if (tops[0]) bits.push(`🏆 Campeão da lista: <b>${esc(tops[0].nome)}</b>, ${tops[0].vezes}×.`);
+    bits.push(`🗓️ Este mês (${ymLabel(thisYM())}): <b>${money(S.monthTotal(thisYM()))}</b>.`);
+    $("#insText").innerHTML = bits.map(b => `<p>${b}</p>`).join("");
+  }
+
+  /* =========================================================
      FINALIZAR COMPRA (modal)
   ========================================================= */
   function openFinalizar() {
@@ -592,7 +655,7 @@
     const dl = $("#itemNames"); if (!dl) return;
     dl.innerHTML = S.learnedNames().slice(0, 200).map(n => `<option value="${esc(n)}"></option>`).join("");
   }
-  function renderAll() { renderLista(); renderHist(); renderMerc(); refreshItemNames(); }
+  function renderAll() { renderLista(); renderHist(); renderMerc(); renderInsights(); refreshItemNames(); }
 
   /* ---------- mascote rotativo (comida animada) ---------- */
   const MASCOTS = ["salivando", "pizza", "hamburguer", "sorvete", "taco", "morango", "cafe", "donut", "carrinho"];

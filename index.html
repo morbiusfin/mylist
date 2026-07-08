@@ -38,9 +38,21 @@
     <!-- ===================== TELA: LISTA ===================== -->
     <section id="scrLista" class="screen active">
       <div class="list-summary" id="listSummary">
-        <div class="ls-cell"><span class="ls-num" id="lsCount">0</span><span class="ls-lbl">itens</span></div>
-        <div class="ls-cell"><span class="ls-num" id="lsDone">0</span><span class="ls-lbl">no carrinho</span></div>
-        <div class="ls-cell ls-total"><span class="ls-num" id="lsTotal">R$ 0</span><span class="ls-lbl">parcial</span></div>
+        <div class="stat">
+          <span class="stat-ic">🛒</span>
+          <span class="stat-num" id="lsCount">0</span>
+          <span class="stat-lbl">Itens</span>
+        </div>
+        <div class="stat">
+          <span class="stat-ic">✅</span>
+          <span class="stat-num" id="lsDone">0</span>
+          <span class="stat-lbl">No carrinho</span>
+        </div>
+        <div class="stat stat-money">
+          <span class="stat-ic">💰</span>
+          <span class="stat-num" id="lsTotal">R$ 0</span>
+          <span class="stat-lbl">Parcial</span>
+        </div>
       </div>
 
       <form id="addForm" class="add-bar" autocomplete="off">
@@ -89,6 +101,36 @@
         <p class="empty-sub">Aparecem aqui quando você registra compras</p>
       </div>
     </section>
+
+    <!-- ===================== TELA: INSIGHTS ===================== -->
+    <section id="scrInsights" class="screen">
+      <h2 class="scr-title">Insights</h2>
+      <div id="insEmpty" class="empty-state hidden">
+        <img class="emoji-anim empty-emoji" src="emoji/salivando.webp" alt="" aria-hidden="true" draggable="false" />
+        <p class="empty-title">Sem dados ainda</p>
+        <p class="empty-sub">Finalize algumas compras pra ver seus gráficos 📊</p>
+      </div>
+      <div id="insContent">
+        <div class="ins-kpis">
+          <div class="ins-kpi"><span class="ins-kpi-num" id="insTotal">R$ 0</span><span class="ins-kpi-lbl">Total gasto</span></div>
+          <div class="ins-kpi"><span class="ins-kpi-num" id="insCount">0</span><span class="ins-kpi-lbl">Compras</span></div>
+          <div class="ins-kpi"><span class="ins-kpi-num" id="insAvg">R$ 0</span><span class="ins-kpi-lbl">Ticket médio</span></div>
+        </div>
+        <div class="ins-card">
+          <h3 class="ins-h">Gasto por mês</h3>
+          <div id="insMonths" class="bars"></div>
+        </div>
+        <div class="ins-card">
+          <h3 class="ins-h">Por mercado</h3>
+          <div id="insMarkets" class="hbars"></div>
+        </div>
+        <div class="ins-card">
+          <h3 class="ins-h">Você compra muito</h3>
+          <div id="insTop" class="top-list"></div>
+        </div>
+        <div id="insText" class="ins-text"></div>
+      </div>
+    </section>
   </main>
 
   <!-- ===== AÇÃO FIXA: finalizar compra ===== -->
@@ -124,6 +166,9 @@
     </button>
     <button class="tab" data-scr="scrMerc">
       <span class="tab-ic">🏪</span><span class="tab-lbl">Mercados</span>
+    </button>
+    <button class="tab" data-scr="scrInsights">
+      <span class="tab-ic">📊</span><span class="tab-lbl">Insights</span>
     </button>
   </nav>
 

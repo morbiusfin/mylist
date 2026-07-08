@@ -235,6 +235,8 @@
   function setQty(id, q) { const i = findItem(id); if (i) { i.qtd = Math.max(1, Math.min(999, parseInt(q, 10) || 1)); save(); } return i; }
   function renameItem(id, nome) { const i = findItem(id); if (i && (nome || "").trim()) { i.nome = nome.trim(); save(); } return i; }
   function removeItem(id) { DATA.lista = DATA.lista.filter(i => i.id !== id); save(); }
+  function removeItems(ids) { const set = new Set(ids); const removed = DATA.lista.filter(i => set.has(i.id)); DATA.lista = DATA.lista.filter(i => !set.has(i.id)); save(); return removed; }
+  function restoreItems(items) { (items || []).forEach(it => { if (!DATA.lista.some(x => x.id === it.id)) DATA.lista.push(it); }); save(); }
   function clearLista() { DATA.lista = []; save(); }
 
   /* ---------- finalizar compra ---------- */
@@ -300,7 +302,7 @@
     save,
     setOnSave(fn) { cbSave = fn; },
     replaceAll(d) { if (d && Array.isArray(d.compras)) { DATA.lista = Array.isArray(d.lista) ? d.lista : []; DATA.compras = d.compras; try { localStorage.setItem(KEY, JSON.stringify(DATA)); } catch (e) {} } },
-    addItem, findItem, toggleItem, setPrice, setQty, removeItem, clearLista,
+    addItem, findItem, toggleItem, setPrice, setQty, removeItem, removeItems, restoreItems, clearLista,
     renameItem,
     finalizarCompra, deleteCompra, repetirCompra,
     comprasSorted, mercados, mercadoStats, monthTotal, grandTotal,

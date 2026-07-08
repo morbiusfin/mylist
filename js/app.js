@@ -5,9 +5,18 @@
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
-  const APP_VERSION = "1.3.0";
-  const VERSION_NOTES = "Editar itens + adicionar mais fácil ✏️";
+  const APP_VERSION = "1.4.0";
+  const VERSION_NOTES = "Excluir vários + desfazer 🗑️";
   const CHANGELOG = [
+    {
+      v: "1.4.0",
+      itens: [
+        "Novo botão de <b>lixeira</b> 🗑️ no topo: toque, <b>escolha os itens</b> e exclua vários de uma vez",
+        "Antes de apagar, o app <b>pergunta “Tem certeza?”</b> — sem sustos",
+        "Apagou sem querer? Aparece <b>“Desfazer”</b> na horinha pra voltar tudo ↩️",
+        "Dá pra <b>selecionar tudo</b> num toque"
+      ]
+    },
     {
       v: "1.3.0",
       itens: [
@@ -97,7 +106,7 @@
         const em = S.matchEmoji(it.nome);
         const sub = (it.preco || 0) * it.qtd;
         const meta = (it.qtd > 1 ? it.qtd + " un" : "1 un") + (it.preco != null ? " · " + money(sub) : "");
-        return `<div class="item ${it.comprado ? "done" : ""}" data-id="${it.id}">
+        return `<div class="item ${it.comprado ? "done" : ""}${selectMode && selected.has(it.id) ? " selected" : ""}" data-id="${it.id}">
           <button class="item-check" data-act="toggle" aria-label="Marcar">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 10 18 20 6"/></svg>
           </button>
@@ -123,15 +132,17 @@
     $("#lsDone").textContent = done.length;
     $("#lsTotal").textContent = moneyShort(parcial);
 
-    // FAB finalizar
+    // modo seleção + FAB finalizar
+    $("#listItems").classList.toggle("selecting", selectMode);
     const fab = $("#btnFinalizar");
-    if (done.length) { fab.classList.remove("hidden"); $("#finCount").textContent = done.length; }
+    if (!selectMode && done.length) { fab.classList.remove("hidden"); $("#finCount").textContent = done.length; }
     else fab.classList.add("hidden");
   }
 
   function onListClick(e) {
     const row = e.target.closest(".item"); if (!row) return;
     const id = row.dataset.id;
+    if (selectMode) { toggleSelect(id); return; }
     const act = e.target.closest("[data-act]") && e.target.closest("[data-act]").dataset.act;
     if (act === "toggle") { S.toggleItem(id); renderLista(); }
     else if (act === "del") { S.removeItem(id); renderLista(); }
@@ -178,6 +189,57 @@
   const ieQtyVal = () => Math.max(1, Math.min(999, parseInt($("#ieQty").value, 10) || 1));
   const iePriceVal = () => { const v = ($("#iePrice").value || "").replace(",", "."); return v === "" || isNaN(v) ? 0 : Math.max(0, +v); };
   function updateIeSub() { $("#ieSub").textContent = money(ieQtyVal() * iePriceVal()); }
+
+  /* ---------- seleção / excluir vários + desfazer ---------- */
+  let selectMode = false;
+  const selected = new Set();
+  function enterSelect() { selectMode = true; selected.clear(); renderLista(); updateSelBar(); $("#selBar").classList.remove("hidden"); }
+  function exitSelect() { selectMode = false; selected.clear(); $("#selBar").classList.add("hidden"); renderLista(); }
+  function toggleSelect(id) {
+    if (selected.has(id)) selected.delete(id); else selected.add(id);
+    const row = document.querySelector('.item[data-id="' + id + '"]');
+    if (row) row.classList.toggle("selected", selected.has(id));
+    updateSelBar();
+  }
+  function updateSelBar() {
+    const n = selected.size, total = S.raw.lista.length;
+    $("#selCount").textContent = n + (n === 1 ? " selecionado" : " selecionados");
+    $("#selDelete").disabled = n === 0;
+    $("#selAll").textContent = (n === total && total > 0) ? "Nenhum" : "Tudo";
+  }
+  function toggleSelectAll() {
+    if (selected.size === S.raw.lista.length) selected.clear();
+    else S.raw.lista.forEach(i => selected.add(i.id));
+    renderLista(); updateSelBar();
+  }
+  function askDeleteSelected() {
+    const n = selected.size; if (!n) return;
+    showConfirm("Excluir " + n + (n === 1 ? " item" : " itens") + "?", "Some da sua lista — mas dá pra desfazer logo depois.", () => {
+      const ids = [...selected];
+      const removed = S.removeItems(ids);
+      exitSelect();
+      showSnackbar(n + (n === 1 ? " item excluído" : " itens excluídos"), () => { S.restoreItems(removed); renderLista(); });
+    });
+  }
+
+  /* ---------- confirmar ---------- */
+  let confirmCb = null;
+  function showConfirm(title, msg, onYes) {
+    $("#confirmTitle").textContent = title;
+    $("#confirmMsg").textContent = msg || "";
+    confirmCb = onYes;
+    openModal("#confirmModal");
+  }
+
+  /* ---------- snackbar (desfazer) ---------- */
+  let snackTimer = null, snackCb = null;
+  function showSnackbar(text, onUndo) {
+    $("#snackText").textContent = text;
+    snackCb = onUndo;
+    $("#snackbar").classList.remove("hidden");
+    clearTimeout(snackTimer);
+    snackTimer = setTimeout(() => { $("#snackbar").classList.add("hidden"); snackCb = null; }, 6000);
+  }
 
   /* =========================================================
      TELA: HISTÓRICO
@@ -504,6 +566,14 @@
       closeModal("#itemModal"); renderLista(); renderHist(); renderMerc(); toast("Item atualizado ✏️");
     });
     $("#ieDelete").addEventListener("click", () => { if (curItem) { S.removeItem(curItem); closeModal("#itemModal"); renderLista(); toast("Item removido"); } });
+    // seleção / excluir vários
+    $("#btnTrash").addEventListener("click", () => { if (selectMode) exitSelect(); else if (!S.raw.lista.length) toast("Lista vazia 🛒"); else enterSelect(); });
+    $("#selCancel").addEventListener("click", exitSelect);
+    $("#selAll").addEventListener("click", toggleSelectAll);
+    $("#selDelete").addEventListener("click", askDeleteSelected);
+    $("#confirmYes").addEventListener("click", () => { closeModal("#confirmModal"); const cb = confirmCb; confirmCb = null; if (cb) cb(); });
+    $("#confirmNo").addEventListener("click", () => { closeModal("#confirmModal"); confirmCb = null; });
+    $("#snackUndo").addEventListener("click", () => { clearTimeout(snackTimer); $("#snackbar").classList.add("hidden"); const cb = snackCb; snackCb = null; if (cb) { cb(); toast("Restaurado 👍"); } });
     // finalizar
     $("#btnFinalizar").addEventListener("click", openFinalizar);
     $("#finConfirm").addEventListener("click", confirmFinalizar);

@@ -95,9 +95,15 @@
     if (!state.grupoId) return null;
     const code = Math.random().toString(36).slice(2, 8).toUpperCase();
     const codeExp = new Date(Date.now() + 24 * 3600 * 1000).toISOString(); // código válido 24h p/ entrar
+    const base = { codigo: code, grupo_id: state.grupoId, criado_por: state.user.id };
     try {
-      const { error } = await state.client.from("convites").insert({ codigo: code, grupo_id: state.grupoId, criado_por: state.user.id, acesso_horas: horas || 0, expira_em: codeExp });
-      if (error) throw error; return code;
+      const { error } = await state.client.from("convites").insert({ ...base, acesso_horas: horas || 0, expira_em: codeExp });
+      if (error) {
+        // colunas de prazo ainda não existem no banco → cria convite simples (permanente)
+        const r2 = await state.client.from("convites").insert(base);
+        if (r2.error) throw r2.error;
+      }
+      return code;
     } catch (e) { console.warn("[cloud] convite", e); return null; }
   }
   async function resetPassword(mail) {

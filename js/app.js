@@ -5,7 +5,7 @@
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
-  const APP_VERSION = "1.6.0";
+  const APP_VERSION = "1.6.1";
   const VERSION_NOTES = "Tela de conta nova + convite com prazo ⏳";
   const CHANGELOG = [
     {

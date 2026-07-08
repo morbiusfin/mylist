@@ -91,11 +91,18 @@
     } catch (e) { console.warn("[cloud] subscribe", e); }
   }
 
-  async function gerarConvite() {
+  async function gerarConvite(horas) {
     if (!state.grupoId) return null;
     const code = Math.random().toString(36).slice(2, 8).toUpperCase();
-    try { const { error } = await state.client.from("convites").insert({ codigo: code, grupo_id: state.grupoId, criado_por: state.user.id }); if (error) throw error; return code; }
-    catch (e) { console.warn("[cloud] convite", e); return null; }
+    const codeExp = new Date(Date.now() + 24 * 3600 * 1000).toISOString(); // código válido 24h p/ entrar
+    try {
+      const { error } = await state.client.from("convites").insert({ codigo: code, grupo_id: state.grupoId, criado_por: state.user.id, acesso_horas: horas || 0, expira_em: codeExp });
+      if (error) throw error; return code;
+    } catch (e) { console.warn("[cloud] convite", e); return null; }
+  }
+  async function resetPassword(mail) {
+    try { const { error } = await state.client.auth.resetPasswordForEmail((mail || "").trim()); if (error) throw error; return { ok: true }; }
+    catch (e) { return { ok: false, error: e.message || String(e) }; }
   }
   async function entrarPorCodigo(code) {
     try {
@@ -114,7 +121,7 @@
   window.MyCloud = {
     isConfigured, init, isLoggedIn, email,
     signUp, signIn, signOut,
-    ensureGrupo, pull, push, subscribe, gerarConvite, entrarPorCodigo, memberCount,
+    ensureGrupo, pull, push, subscribe, gerarConvite, entrarPorCodigo, memberCount, resetPassword,
     onAuth: (cb) => { onAuthCb = cb; }
   };
 })();

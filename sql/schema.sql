@@ -23,21 +23,25 @@ create table if not exists public.membros (
   user_id   uuid not null references auth.users(id) on delete cascade,
   papel     text not null default 'membro',
   entrou_em timestamptz not null default now(),
+  expira_em timestamptz,   -- acesso temporário: quando vence, perde acesso (null = permanente)
   primary key (grupo_id, user_id)
 );
 
 -- Convites (código curto p/ o par entrar)
 create table if not exists public.convites (
-  codigo    text primary key,
-  grupo_id  uuid not null references public.grupos(id) on delete cascade,
-  criado_por uuid not null references auth.users(id) on delete cascade,
-  criado_em timestamptz not null default now()
+  codigo       text primary key,
+  grupo_id     uuid not null references public.grupos(id) on delete cascade,
+  criado_por   uuid not null references auth.users(id) on delete cascade,
+  criado_em    timestamptz not null default now(),
+  acesso_horas int not null default 0,   -- prazo de acesso concedido a quem entrar (0 = sem limite)
+  expira_em    timestamptz               -- validade do CÓDIGO p/ entrar (ex.: 24h)
 );
 
 -- ---------- helper: sou membro deste grupo? ----------
 create or replace function public.sou_membro(g uuid)
 returns boolean language sql security definer stable set search_path = public as $$
-  select exists (select 1 from public.membros m where m.grupo_id = g and m.user_id = auth.uid());
+  select exists (select 1 from public.membros m where m.grupo_id = g and m.user_id = auth.uid()
+    and (m.expira_em is null or m.expira_em > now()));
 $$;
 
 -- ---------- RLS ----------
@@ -70,13 +74,14 @@ create policy convites_ins on public.convites for insert with check (public.sou_
 -- ---------- RPC: entrar por código ----------
 create or replace function public.entrar_por_codigo(p_codigo text)
 returns uuid language plpgsql security definer set search_path = public as $$
-declare g uuid;
+declare g uuid; h int; exp timestamptz;
 begin
-  select grupo_id into g from public.convites where codigo = p_codigo;
+  select grupo_id, acesso_horas, expira_em into g, h, exp from public.convites where codigo = p_codigo;
   if g is null then raise exception 'convite inválido'; end if;
-  insert into public.membros (grupo_id, user_id, papel)
-    values (g, auth.uid(), 'membro')
-    on conflict (grupo_id, user_id) do nothing;
+  if exp is not null and exp < now() then raise exception 'convite expirado'; end if;
+  insert into public.membros (grupo_id, user_id, papel, expira_em)
+    values (g, auth.uid(), 'membro', case when coalesce(h,0) > 0 then now() + (h || ' hours')::interval else null end)
+    on conflict (grupo_id, user_id) do update set expira_em = excluded.expira_em;
   return g;
 end; $$;
 

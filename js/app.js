@@ -5,9 +5,18 @@
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
-  const APP_VERSION = "1.5.0";
-  const VERSION_NOTES = "Aprende preços + visual novo ✨";
+  const APP_VERSION = "1.6.0";
+  const VERSION_NOTES = "Tela de conta nova + convite com prazo ⏳";
   const CHANGELOG = [
+    {
+      v: "1.6.0",
+      itens: [
+        "<b>Tela de conta</b> nova, com a cara do Mylist 🛒 — bem-vindo, mostrar senha e “esqueci minha senha”",
+        "<b>Convite com prazo</b>: convide alguém por <b>1 dia, 7, 30 dias ou sem limite</b>. Quando vence, a pessoa perde o acesso sozinha ⏳",
+        "Pode ter <b>várias pessoas</b> na mesma lista, cada uma com sua conta",
+        "Sua lista continua <b>no seu aparelho</b> — a conta é só pra compartilhar"
+      ]
+    },
     {
       v: "1.5.0",
       itens: [
@@ -520,8 +529,8 @@
   function refreshContaUI() {
     if (!$("#contaModal")) return;
     const logged = window.MyCloud.isLoggedIn();
-    $("#contaOut").classList.toggle("hidden", logged);
-    $("#contaIn").classList.toggle("hidden", !logged);
+    $("#authOut").classList.toggle("hidden", logged);
+    $("#authIn").classList.toggle("hidden", !logged);
     if (logged) {
       $("#cWho").textContent = window.MyCloud.email() || "";
       const cm = $("#cMembers"); if (cm) { cm.textContent = ""; window.MyCloud.memberCount().then(n => { cm.textContent = n > 1 ? (n + " contas nesta lista 👥") : "Só você por enquanto — convide alguém 👆"; }); }
@@ -546,7 +555,25 @@
       const r = await window.MyCloud.signUp($("#cEmail").value.trim(), $("#cPass").value);
       $("#cMsg").textContent = r.ok ? (r.needsConfirm ? "Confirme o email e depois entre." : "Conta criada! Toque em Entrar.") : ("Erro: " + r.error);
     });
-    $("#cGenInvite").addEventListener("click", async () => { $("#cInvite").value = (await window.MyCloud.gerarConvite()) || "erro"; });
+    $("#cGenInvite").addEventListener("click", async () => {
+      const h = parseInt($("#cInviteDur").value, 10) || 0;
+      $("#cInvite").value = "…";
+      const c = await window.MyCloud.gerarConvite(h);
+      $("#cInvite").value = c || "erro";
+      if (c) toast(h ? "Código gerado — acesso por " + (h >= 720 ? "30 dias" : h >= 168 ? "7 dias" : "1 dia") + " ⏳" : "Código gerado — sem prazo");
+    });
+    // olho da senha
+    $("#cEye").addEventListener("click", () => {
+      const p = $("#cPass"); const show = p.type === "password";
+      p.type = show ? "text" : "password"; $("#cEye").classList.toggle("on", show);
+    });
+    // esqueci minha senha
+    $("#cForgot").addEventListener("click", async () => {
+      const mail = $("#cEmail").value.trim();
+      if (!mail) { $("#cMsg").textContent = "Digite seu email primeiro."; return; }
+      const r = await window.MyCloud.resetPassword(mail);
+      $("#cMsg").textContent = r.ok ? "Enviamos um link de redefinição pro seu email 📧" : ("Erro: " + r.error);
+    });
     $("#cJoin").addEventListener("click", async () => {
       const r = await window.MyCloud.entrarPorCodigo($("#cJoinCode").value);
       if (r.ok) { applyingRemote = true; mergeDoc(await window.MyCloud.pull()); applyingRemote = false; renderAll(); cloudActive = true; window.MyCloud.subscribe(onRemote); toast("Entrou na conta compartilhada 🎉"); closeModal("#contaModal"); }
@@ -635,7 +662,7 @@
     $("#modeSeg").addEventListener("click", e => { const b = e.target.closest(".seg-btn"); if (b) { window.MyTheme.save({ ...window.MyTheme.get(), mode: b.dataset.mode }); renderTheme(); } });
     $("#swatches").addEventListener("click", e => { const b = e.target.closest(".swatch"); if (b) { window.MyTheme.save({ ...window.MyTheme.get(), color: b.dataset.color }); renderTheme(); } });
     $("#miNews").addEventListener("click", () => { closeModal("#menuModal"); showWhatsNew(); });
-    $("#miAbout").addEventListener("click", () => { toast("Mylist v" + APP_VERSION + " · " + VERSION_NOTES); });
+    $("#miAbout").addEventListener("click", () => { toast("Mylist v" + APP_VERSION + " · um app MorbiusFin 🛒"); });
     $("#miVersion").textContent = "v" + APP_VERSION;
     // whats new / update
     $("#wnClose").addEventListener("click", () => closeModal("#wnModal"));

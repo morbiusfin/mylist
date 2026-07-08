@@ -249,58 +249,70 @@
     </div>
   </div>
 
-  <!-- ===== MODAL: conta compartilhada ===== -->
-  <div id="contaModal" class="modal hidden">
-    <div class="sheet">
-      <div class="sheet-head">
-        <h2>Conta compartilhada</h2>
-        <button type="button" class="sheet-x" data-close aria-label="Fechar">✕</button>
+  <!-- ===== TELA: conta compartilhada (full-screen) ===== -->
+  <div id="contaModal" class="modal auth-screen hidden">
+    <button type="button" class="auth-back" data-close aria-label="Voltar">✕</button>
+
+    <!-- deslogado -->
+    <div id="authOut" class="auth-inner">
+      <div class="auth-group">MorbiusFin <span class="ag-sep">›</span> <b>Mylist</b></div>
+      <div class="auth-brand">
+        <div class="auth-mascot"><img class="emoji-anim" src="emoji/carrinho.webp" alt="" aria-hidden="true" draggable="false" /></div>
+        <h1 class="auth-word">Mylist</h1>
+        <p class="auth-tag">sua feira, com quem você quiser</p>
       </div>
-      <div class="sheet-body">
-        <!-- deslogado -->
-        <div id="contaOut" class="conta-body">
-          <div class="conta-hero">
-            <img class="emoji-anim conta-hero-ic" src="emoji/aceno.webp" alt="" aria-hidden="true" draggable="false" />
-            <p>Entre pra dividir a <b>mesma lista</b> com quem você quiser. Todo mundo vê e edita <b>ao vivo</b> ☁️</p>
-          </div>
-          <label class="field"><span class="field-lbl">Email</span>
-            <input id="cEmail" class="field-input" type="email" inputmode="email" autocomplete="email" placeholder="voce@email.com" autocapitalize="none" spellcheck="false" /></label>
-          <label class="field"><span class="field-lbl">Senha</span>
-            <input id="cPass" class="field-input" type="password" autocomplete="current-password" placeholder="sua senha" /></label>
-          <p id="cMsg" class="conta-msg"></p>
-          <div class="conta-actions">
-            <button id="cLogin" class="btn-primary">Entrar</button>
-            <button id="cSignup" class="btn-ghost">Criar conta</button>
-          </div>
+      <h2 class="auth-hi">Bem-vindo 👋</h2>
+      <label class="field"><span class="field-lbl">Email</span>
+        <input id="cEmail" class="field-input" type="email" inputmode="email" autocomplete="email" placeholder="voce@email.com" autocapitalize="none" spellcheck="false" /></label>
+      <label class="field"><span class="field-lbl">Senha</span>
+        <div class="pass-wrap">
+          <input id="cPass" class="field-input" type="password" autocomplete="current-password" placeholder="sua senha" />
+          <button id="cEye" type="button" class="pass-eye" aria-label="Mostrar senha">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div></label>
+      <p id="cMsg" class="conta-msg"></p>
+      <button id="cLogin" class="btn-primary">Entrar</button>
+      <button id="cForgot" type="button" class="auth-link">Esqueci minha senha</button>
+      <div class="auth-or"><span>ou</span></div>
+      <button id="cSignup" class="btn-ghost">Criar uma nova conta</button>
+      <div class="auth-foot">
+        <p>Sua lista fica <b>no seu aparelho</b>. A conta serve só pra <b>compartilhar</b> com outras pessoas 🛒</p>
+        <p><a href="privacidade.html">Privacidade</a> · <a href="termos.html">Termos</a></p>
+        <p class="auth-copy">© 2026 <b>MorbiusFin</b> · Mylist</p>
+      </div>
+    </div>
+
+    <!-- logado -->
+    <div id="authIn" class="auth-inner hidden">
+      <div class="auth-brand">
+        <div class="auth-mascot small"><img class="emoji-anim" src="emoji/salivando.webp" alt="" aria-hidden="true" draggable="false" /></div>
+        <h2 class="auth-hi" id="cWho"></h2>
+        <span id="cSyncPill" class="conta-sync">☁️ sincronizado</span>
+      </div>
+      <div class="conta-block">
+        <span class="field-lbl">Convidar alguém (com prazo)</span>
+        <select id="cInviteDur" class="field-input">
+          <option value="24">Acesso por 1 dia</option>
+          <option value="168">Acesso por 7 dias</option>
+          <option value="720">Acesso por 30 dias</option>
+          <option value="0">Sem limite</option>
+        </select>
+        <div class="invite-row">
+          <input id="cInvite" class="field-input invite-code" readonly placeholder="toque em Gerar" />
+          <button id="cGenInvite" type="button" class="invite-btn">Gerar</button>
         </div>
-        <!-- logado -->
-        <div id="contaIn" class="conta-body hidden">
-          <div class="conta-account">
-            <div class="conta-avatar">👤</div>
-            <div class="conta-account-info">
-              <b id="cWho"></b>
-              <span id="cSyncPill" class="conta-sync">☁️ sincronizado</span>
-            </div>
-          </div>
-          <div class="conta-block">
-            <span class="field-lbl">Convide (mande o código)</span>
-            <div class="invite-row">
-              <input id="cInvite" class="field-input invite-code" readonly placeholder="toque em Gerar" />
-              <button id="cGenInvite" type="button" class="invite-btn">Gerar</button>
-            </div>
-            <p class="conta-hint">Pode convidar <b>quantas pessoas quiser</b> — todas ficam na mesma lista 👥</p>
-          </div>
-          <div class="conta-block">
-            <span class="field-lbl">Entrar no código de alguém</span>
-            <div class="invite-row">
-              <input id="cJoinCode" class="field-input" placeholder="ex.: A1B2C3" autocapitalize="characters" autocomplete="off" spellcheck="false" />
-              <button id="cJoin" type="button" class="invite-btn invite-btn-go">Entrar</button>
-            </div>
-          </div>
-          <p id="cMembers" class="conta-members"></p>
-          <button id="cLogout" class="btn-ghost">Sair da conta</button>
+        <p class="conta-hint">Mande o código pra pessoa. Quando o <b>prazo vencer</b>, ela perde o acesso sozinha ⏳ — dá pra convidar <b>quantas quiser</b>.</p>
+      </div>
+      <div class="conta-block">
+        <span class="field-lbl">Entrar no código de alguém</span>
+        <div class="invite-row">
+          <input id="cJoinCode" class="field-input" placeholder="ex.: A1B2C3" autocapitalize="characters" autocomplete="off" spellcheck="false" />
+          <button id="cJoin" type="button" class="invite-btn invite-btn-go">Entrar</button>
         </div>
       </div>
+      <p id="cMembers" class="conta-members"></p>
+      <button id="cLogout" class="btn-ghost">Sair da conta</button>
     </div>
   </div>
 

@@ -5,9 +5,18 @@
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
-  const APP_VERSION = "1.4.0";
-  const VERSION_NOTES = "Excluir vários + desfazer 🗑️";
+  const APP_VERSION = "1.5.0";
+  const VERSION_NOTES = "Aprende preços + visual novo ✨";
   const CHANGELOG = [
+    {
+      v: "1.5.0",
+      itens: [
+        "O app <b>aprende</b>: ao digitar, sugere itens que você já usou, e o <b>preço vem sozinho</b> do histórico — você quase não digita valor 🧠",
+        "Tela de <b>Conta compartilhada</b> repaginada, mais bonita e espaçada — e dá pra ter <b>várias pessoas</b> na mesma lista 👥",
+        "Botão <b>Finalizar compra</b> mais bonito e sem texto quebrado",
+        "Quando abre uma janela, o fundo <b>não rola mais</b> junto"
+      ]
+    },
     {
       v: "1.4.0",
       itens: [
@@ -144,7 +153,11 @@
     const id = row.dataset.id;
     if (selectMode) { toggleSelect(id); return; }
     const act = e.target.closest("[data-act]") && e.target.closest("[data-act]").dataset.act;
-    if (act === "toggle") { S.toggleItem(id); renderLista(); }
+    if (act === "toggle") {
+      const it = S.toggleItem(id);
+      if (it && it.comprado && it.preco == null) { const lp = S.lastPrice(it.nome); if (lp != null) S.setPrice(id, lp); }
+      renderLista();
+    }
     else if (act === "del") { S.removeItem(id); renderLista(); }
     else if (act === "edit") { openItemEdit(id); }
   }
@@ -162,7 +175,8 @@
     const inp = $("#addInput");
     const v = inp.value.trim();
     if (!v) return;
-    S.addItem(v);
+    const it = S.addItem(v);
+    if (it && it.preco == null) { const lp = S.lastPrice(it.nome); if (lp != null) S.setPrice(it.id, lp); } // aprende o preço
     inp.value = "";
     updateAddEmoji();
     renderLista();
@@ -181,7 +195,8 @@
     curItem = id;
     $("#ieName").value = it.nome;
     $("#ieQty").value = it.qtd;
-    $("#iePrice").value = it.preco != null ? String(it.preco).replace(".", ",") : "";
+    const pref = it.preco != null ? it.preco : S.lastPrice(it.nome);   // valor aprendido (não precisa digitar)
+    $("#iePrice").value = pref != null ? String(pref).replace(".", ",") : "";
     updateIeEmoji(); updateIeSub();
     openModal("#itemModal");
   }
@@ -437,8 +452,22 @@
   /* =========================================================
      MODAIS / TOAST / NAV
   ========================================================= */
-  function openModal(sel) { $(sel).classList.remove("hidden"); }
-  function closeModal(sel) { $(sel).classList.add("hidden"); }
+  let scrollLockY = 0;
+  function syncScrollLock() {
+    const anyOpen = !!document.querySelector(".modal:not(.hidden)");
+    const locked = document.body.classList.contains("locked");
+    if (anyOpen && !locked) {
+      scrollLockY = window.scrollY || document.documentElement.scrollTop || 0;
+      document.body.style.top = "-" + scrollLockY + "px";
+      document.body.classList.add("locked");
+    } else if (!anyOpen && locked) {
+      document.body.classList.remove("locked");
+      document.body.style.top = "";
+      window.scrollTo(0, scrollLockY);
+    }
+  }
+  function openModal(sel) { $(sel).classList.remove("hidden"); syncScrollLock(); }
+  function closeModal(sel) { $(sel).classList.add("hidden"); syncScrollLock(); }
   let toastT;
   function toast(msg) {
     const t = $("#toast"); t.textContent = msg; t.classList.remove("hidden");
@@ -493,7 +522,10 @@
     const logged = window.MyCloud.isLoggedIn();
     $("#contaOut").classList.toggle("hidden", logged);
     $("#contaIn").classList.toggle("hidden", !logged);
-    if (logged) $("#cWho").textContent = window.MyCloud.email() || "";
+    if (logged) {
+      $("#cWho").textContent = window.MyCloud.email() || "";
+      const cm = $("#cMembers"); if (cm) { cm.textContent = ""; window.MyCloud.memberCount().then(n => { cm.textContent = n > 1 ? (n + " contas nesta lista 👥") : "Só você por enquanto — convide alguém 👆"; }); }
+    }
     $("#cInvite").value = ""; $("#cMsg").textContent = "";
   }
   function initCloud() {
@@ -529,7 +561,11 @@
     window.scrollTo({ top: 0, behavior: "instant" in window ? "instant" : "auto" });
   }
 
-  function renderAll() { renderLista(); renderHist(); renderMerc(); }
+  function refreshItemNames() {
+    const dl = $("#itemNames"); if (!dl) return;
+    dl.innerHTML = S.learnedNames().slice(0, 200).map(n => `<option value="${esc(n)}"></option>`).join("");
+  }
+  function renderAll() { renderLista(); renderHist(); renderMerc(); refreshItemNames(); }
 
   /* ---------- mascote rotativo (comida animada) ---------- */
   const MASCOTS = ["salivando", "pizza", "hamburguer", "sorvete", "taco", "morango", "cafe", "donut", "carrinho"];
@@ -610,7 +646,7 @@
     $("#updLater").addEventListener("click", () => closeModal("#updModal"));
     // fechar modais (backdrop + botão X)
     $$(".modal").forEach(m => {
-      m.addEventListener("click", e => { if (e.target === m || e.target.closest("[data-close]")) m.classList.add("hidden"); });
+      m.addEventListener("click", e => { if (e.target === m || e.target.closest("[data-close]")) { m.classList.add("hidden"); syncScrollLock(); } });
     });
 
     updateAddEmoji();

@@ -1,5 +1,5 @@
 /* Service Worker — network-first (sempre busca a versão nova; cache só p/ offline) */
-const CACHE = "mylist-v6";
+const CACHE = "mylist-v7";
 const EMOJIS = [
   "abacate","abacaxi","aceno","alho","bacon","batata","biscoito","brilho","brocolis","burrito",
   "cachorroquente","cafe","carrinho","cebola","cenoura","cereja","cha","check","cogumelo","donut",

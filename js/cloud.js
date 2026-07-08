@@ -105,10 +105,16 @@
     } catch (e) { return { ok: false, error: e.message || String(e) }; }
   }
 
+  async function memberCount() {
+    if (!state.grupoId) return 0;
+    try { const { count } = await state.client.from("membros").select("*", { count: "exact", head: true }).eq("grupo_id", state.grupoId); return count || 0; }
+    catch (e) { return 0; }
+  }
+
   window.MyCloud = {
     isConfigured, init, isLoggedIn, email,
     signUp, signIn, signOut,
-    ensureGrupo, pull, push, subscribe, gerarConvite, entrarPorCodigo,
+    ensureGrupo, pull, push, subscribe, gerarConvite, entrarPorCodigo, memberCount,
     onAuth: (cb) => { onAuthCb = cb; }
   };
 })();

@@ -282,6 +282,20 @@
     return Object.values(map).map(m => ({ ...m, ticket: m.n ? m.total / m.n : 0 }))
       .sort((a, b) => b.total - a.total);
   }
+  // aprendizado: nomes já usados (p/ autocomplete) e último preço pago (p/ pré-preencher)
+  function learnedNames() {
+    const freq = {};
+    DATA.compras.forEach(c => c.itens.forEach(it => { const k = (it.nome || "").trim(); if (k) freq[k] = (freq[k] || 0) + 1; }));
+    DATA.lista.forEach(i => { const k = (i.nome || "").trim(); if (k && !(k in freq)) freq[k] = 0.5; });
+    return Object.keys(freq).sort((a, b) => freq[b] - freq[a]);
+  }
+  function lastPrice(nome) {
+    const n = norm(nome); if (!n) return null;
+    for (const c of comprasSorted()) {
+      for (const it of c.itens) { if (norm(it.nome) === n && it.preco > 0) return it.preco; }
+    }
+    return null;
+  }
   function monthTotal(ym) { return DATA.compras.filter(c => c.data.slice(0, 7) === ym).reduce((s, c) => s + c.total, 0); }
   function grandTotal() { return DATA.compras.reduce((s, c) => s + c.total, 0); }
 
@@ -305,7 +319,7 @@
     addItem, findItem, toggleItem, setPrice, setQty, removeItem, removeItems, restoreItems, clearLista,
     renameItem,
     finalizarCompra, deleteCompra, repetirCompra,
-    comprasSorted, mercados, mercadoStats, monthTotal, grandTotal,
+    comprasSorted, mercados, mercadoStats, monthTotal, grandTotal, learnedNames, lastPrice,
     matchEmoji, parseEntry, norm,
     exportData, importData
   };

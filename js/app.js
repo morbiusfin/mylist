@@ -5,14 +5,15 @@
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
-  const APP_VERSION = "1.9.1";
-  const VERSION_NOTES = "Barra de abas nova + botão voltar redondo";
+  const APP_VERSION = "1.10.0";
+  const VERSION_NOTES = "Visual repaginado ✨";
   const CHANGELOG = [
     {
-      v: "1.9.1",
+      v: "1.10.0",
       itens: [
-        "Barra de baixo repaginada: a aba <b>ativa</b> ganha um destaque arredondado 🎯",
-        "Botão <b>voltar</b> nas telas de Privacidade e Termos virou uma <b>bolinha</b> no canto ↩️"
+        "<b>Visual repaginado</b> em todo o app ✨ — cards com mais profundidade, títulos com destaque, cantos e sombras mais suaves, rolagem mais limpa",
+        "Aba ativa com destaque arredondado (estilo novo) 🎯",
+        "Botão <b>voltar</b> em Privacidade/Termos virou uma bolinha no canto ↩️"
       ]
     },
     {

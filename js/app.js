@@ -5,9 +5,17 @@
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
-  const APP_VERSION = "1.8.0";
-  const VERSION_NOTES = "Layout fixo + preço com máscara + ícone 🍍";
+  const APP_VERSION = "1.9.0";
+  const VERSION_NOTES = "Insights por período + ícone 🍍 novo";
   const CHANGELOG = [
+    {
+      v: "1.9.0",
+      itens: [
+        "Nos <b>Insights</b>, agora dá pra escolher o <b>período</b>: 7, 14, 30, 60, 90 dias, tudo ou <b>personalizado</b> (você escolhe as datas) 📅",
+        "Tudo (total, gráficos, mercados, campeões) recalcula pro período escolhido",
+        "Ícone do abacaxi 🍍 mais bonito (emoji da biblioteca)"
+      ]
+    },
     {
       v: "1.8.0",
       itens: [
@@ -378,56 +386,93 @@
   }
 
   /* =========================================================
-     TELA: INSIGHTS
+     TELA: INSIGHTS (com período)
   ========================================================= */
-  function renderInsights() {
-    const compras = S.raw.compras;
-    if (!compras.length) { $("#insEmpty").classList.remove("hidden"); $("#insContent").classList.add("hidden"); return; }
-    $("#insEmpty").classList.add("hidden"); $("#insContent").classList.remove("hidden");
+  const INS_PERIODS = [{ v: 7, l: "7 dias" }, { v: 14, l: "14 dias" }, { v: 30, l: "30 dias" }, { v: 60, l: "60 dias" }, { v: 90, l: "90 dias" }, { v: "all", l: "Tudo" }, { v: "custom", l: "Personalizado" }];
+  let insPeriod = 30, insCustom = null;
 
-    const total = S.grandTotal(), n = compras.length;
+  function insRange() {
+    const today = todayISO();
+    if (insPeriod === "all") return { from: "0000-01-01", to: today, label: "Desde o começo" };
+    if (insPeriod === "custom" && insCustom && insCustom.from && insCustom.to) {
+      const a = insCustom.from <= insCustom.to ? insCustom.from : insCustom.to;
+      const b = insCustom.from <= insCustom.to ? insCustom.to : insCustom.from;
+      return { from: a, to: b, label: `${dLabel(a)} a ${dLabel(b)}` };
+    }
+    const d = new Date(); d.setDate(d.getDate() - (insPeriod - 1));
+    return { from: d.toISOString().slice(0, 10), to: today, label: `Últimos ${insPeriod} dias` };
+  }
+  function monthBuckets(fromISO, toISO) {
+    const endD = new Date(toISO + "T00:00:00"), fromYm = fromISO.slice(0, 7), out = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(endD.getFullYear(), endD.getMonth() - i, 1);
+      const ym = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+      if (ym >= fromYm) out.push(ym);
+    }
+    return out;
+  }
+  function renderPeriodChips() {
+    $("#insPeriodChips").innerHTML = INS_PERIODS.map(p =>
+      `<button class="chip ${p.v === insPeriod ? "active" : ""}" data-p="${p.v}">${p.l}</button>`).join("");
+    $("#insCustomRow").classList.toggle("hidden", insPeriod !== "custom");
+  }
+
+  function renderInsights() {
+    const all = S.raw.compras;
+    if (!all.length) { $("#insEmpty").classList.remove("hidden"); $("#insContent").classList.add("hidden"); return; }
+    $("#insEmpty").classList.add("hidden"); $("#insContent").classList.remove("hidden");
+    renderPeriodChips();
+
+    const rg = insRange();
+    $("#insPeriodLbl").textContent = rg.label;
+    const fil = all.filter(c => c.data >= rg.from && c.data <= rg.to);
+
+    const total = fil.reduce((s, c) => s + c.total, 0), n = fil.length;
     $("#insTotal").textContent = moneyShort(total);
     $("#insCount").textContent = n;
     $("#insAvg").textContent = moneyShort(n ? total / n : 0);
 
-    // gasto por mês (últimos 6)
-    const series = S.monthlySeries(6);
-    const maxV = Math.max(1, ...series.map(s => s.total));
-    $("#insMonths").innerHTML = series.map(s => {
-      const h = s.total ? Math.max(Math.round(s.total / maxV * 100), 5) : 0;
-      return `<div class="bar-col">
-        <span class="bar-val">${s.total ? moneyShort(s.total) : ""}</span>
+    // gasto por mês (dentro do período)
+    const monT = monthBuckets(rg.from, rg.to).map(ym => ({ ym, total: fil.filter(c => c.data.slice(0, 7) === ym).reduce((s, c) => s + c.total, 0) }));
+    const maxV = Math.max(1, ...monT.map(m => m.total));
+    $("#insMonths").innerHTML = monT.map(m => {
+      const h = m.total ? Math.max(Math.round(m.total / maxV * 100), 5) : 0;
+      return `<div class="bar-col"><span class="bar-val">${m.total ? moneyShort(m.total) : ""}</span>
         <div class="bar-track"><div class="bar-fill" style="height:${h}%"></div></div>
-        <span class="bar-lbl">${mShort(s.ym)}</span>
-      </div>`;
+        <span class="bar-lbl">${mShort(m.ym)}</span></div>`;
     }).join("");
 
-    // por mercado
-    const ms = S.mercadoStats().slice(0, 6);
+    // por mercado (período)
+    const mmap = {};
+    fil.forEach(c => { mmap[c.mercado] = (mmap[c.mercado] || 0) + c.total; });
+    const ms = Object.keys(mmap).map(k => ({ nome: k, total: mmap[k] })).sort((a, b) => b.total - a.total).slice(0, 6);
     const maxM = Math.max(1, ...ms.map(m => m.total));
-    $("#insMarkets").innerHTML = ms.map(m => `<div class="hbar-row">
+    $("#insMarkets").innerHTML = ms.length ? ms.map(m => `<div class="hbar-row">
       <span class="hbar-name">${esc(m.nome)}</span>
       <div class="hbar-track"><div class="hbar-fill" style="width:${Math.max(Math.round(m.total / maxM * 100), 6)}%"></div></div>
-      <span class="hbar-val">${money(m.total)}</span>
-    </div>`).join("");
+      <span class="hbar-val">${money(m.total)}</span></div>`).join("") : `<p class="ins-none">Nada nesse período.</p>`;
 
-    // você compra muito
-    const tops = S.topItens(5);
-    $("#insTop").innerHTML = tops.map(t => {
+    // top itens (período)
+    const imap = {};
+    fil.forEach(c => c.itens.forEach(it => { const k = S.norm(it.nome); if (!k) return; const o = imap[k] || (imap[k] = { nome: it.nome, vezes: 0, gasto: 0 }); o.vezes++; o.gasto += (it.preco || 0) * it.qtd; }));
+    const tops = Object.values(imap).sort((a, b) => b.vezes - a.vezes || b.gasto - a.gasto).slice(0, 5);
+    $("#insTop").innerHTML = tops.length ? tops.map(t => {
       const em = S.matchEmoji(t.nome);
       return `<div class="top-row"><span class="top-emoji">${emojiHTML(em)}</span>
-        <span class="top-name">${esc(t.nome)}</span>
-        <span class="top-count">${t.vezes}×</span>
+        <span class="top-name">${esc(t.nome)}</span><span class="top-count">${t.vezes}×</span>
         <span class="top-gasto">${t.gasto ? money(t.gasto) : ""}</span></div>`;
-    }).join("");
+    }).join("") : `<p class="ins-none">Nada nesse período.</p>`;
 
-    // insights em texto
+    // texto
     const bits = [];
-    const best = [...series].sort((a, b) => b.total - a.total)[0];
-    if (best && best.total) bits.push(`📈 Maior gasto foi em <b>${ymLabel(best.ym)}</b> (${money(best.total)}).`);
-    if (ms[0]) bits.push(`🏪 Você mais compra no <b>${esc(ms[0].nome)}</b> — ${money(ms[0].total)} no total.`);
-    if (tops[0]) bits.push(`🏆 Campeão da lista: <b>${esc(tops[0].nome)}</b>, ${tops[0].vezes}×.`);
-    bits.push(`🗓️ Este mês (${ymLabel(thisYM())}): <b>${money(S.monthTotal(thisYM()))}</b>.`);
+    if (!n) bits.push("Nenhuma compra nesse período. 🤷");
+    else {
+      const best = [...monT].sort((a, b) => b.total - a.total)[0];
+      if (best && best.total) bits.push(`📈 Maior gasto em <b>${ymLabel(best.ym)}</b> (${money(best.total)}).`);
+      if (ms[0]) bits.push(`🏪 Você mais gastou no <b>${esc(ms[0].nome)}</b> — ${money(ms[0].total)}.`);
+      if (tops[0]) bits.push(`🏆 Item campeão: <b>${esc(tops[0].nome)}</b>, ${tops[0].vezes}×.`);
+      bits.push(`🧾 Foram <b>${n}</b> ${n === 1 ? "compra" : "compras"}, total <b>${money(total)}</b>.`);
+    }
     $("#insText").innerHTML = bits.map(b => `<p>${b}</p>`).join("");
   }
 
@@ -713,6 +758,17 @@
     $("#histFilters").addEventListener("click", onHistClick);
     $("#histList").addEventListener("click", onHistClick);
     $("#mercList").addEventListener("click", onMercClick);
+    // insights: período
+    $("#insPeriodChips").addEventListener("click", e => {
+      const c = e.target.closest(".chip"); if (!c) return;
+      const v = c.dataset.p; insPeriod = (v === "all" || v === "custom") ? v : parseInt(v, 10);
+      if (insPeriod === "custom") {
+        if (!$("#insTo").value) $("#insTo").value = todayISO();
+        if (!$("#insFrom").value) { const d = new Date(); d.setDate(d.getDate() - 29); $("#insFrom").value = d.toISOString().slice(0, 10); }
+      }
+      renderInsights();
+    });
+    $("#insApply").addEventListener("click", () => { insCustom = { from: $("#insFrom").value, to: $("#insTo").value }; insPeriod = "custom"; renderInsights(); });
     // compra detalhe
     $("#cmDelete").addEventListener("click", () => {
       if (curCompra && confirm("Excluir esta compra do histórico?")) { S.deleteCompra(curCompra); closeModal("#compraModal"); renderAll(); toast("Compra excluída"); }

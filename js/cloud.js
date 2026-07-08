@@ -7,8 +7,8 @@
   "use strict";
 
   const CONFIG = {
-    url:  "",   // <-- cole a Project URL aqui
-    anon: ""    // <-- cole a anon public key aqui
+    url:  "https://bpkiiwtxjtqyvuamyuzf.supabase.co",
+    anon: "sb_publishable_69wtpOAXEtsuA4XWyhSugA_yY5LWKwN"   // publishable key (pública; RLS protege os dados)
   };
 
   const state = { client: null, user: null, grupoId: null, channel: null, ready: false };

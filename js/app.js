@@ -5,9 +5,18 @@
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
-  const APP_VERSION = "1.1.0";
-  const VERSION_NOTES = "Emoji pra tudo + 12 temas 🎨";
+  const APP_VERSION = "1.2.0";
+  const VERSION_NOTES = "Conta compartilhada ao vivo 👥";
   const CHANGELOG = [
+    {
+      v: "1.2.0",
+      itens: [
+        "<b>Conta compartilhada</b> chegou! Entre com email e senha (menu → Conta compartilhada) e divida a <b>mesma lista e histórico</b> com outra pessoa 👥",
+        "É <b>ao vivo</b>: um adiciona “leite”, aparece no outro na hora ☁️",
+        "Pra convidar: gere um <b>código</b> e mande pro seu par — ele entra no mesmo espaço",
+        "Sem conta, tudo continua igual, <b>salvo no seu aparelho</b>"
+      ]
+    },
     {
       v: "1.1.0",
       itens: [

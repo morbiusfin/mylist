@@ -5,9 +5,18 @@
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
-  const APP_VERSION = "1.2.0";
-  const VERSION_NOTES = "Conta compartilhada ao vivo 👥";
+  const APP_VERSION = "1.3.0";
+  const VERSION_NOTES = "Editar itens + adicionar mais fácil ✏️";
   const CHANGELOG = [
+    {
+      v: "1.3.0",
+      itens: [
+        "<b>Toque em qualquer item</b> pra editar: muda o <b>nome</b>, a <b>quantidade</b> (com − e +) e o <b>preço</b> 🎯",
+        "<b>Adicionar ficou mais fácil</b>: agora o botão ➕ e o “Enter” do teclado funcionam de primeira no celular",
+        "A lista mostra o <b>subtotal</b> de cada item (quantidade × preço)",
+        "Corrigido um item “fantasma” que aparecia embaixo da lista"
+      ]
+    },
     {
       v: "1.2.0",
       itens: [
@@ -86,18 +95,23 @@
       empty.classList.add("hidden");
       cont.innerHTML = ord.map(it => {
         const em = S.matchEmoji(it.nome);
+        const sub = (it.preco || 0) * it.qtd;
+        const meta = (it.qtd > 1 ? it.qtd + " un" : "1 un") + (it.preco != null ? " · " + money(sub) : "");
         return `<div class="item ${it.comprado ? "done" : ""}" data-id="${it.id}">
           <button class="item-check" data-act="toggle" aria-label="Marcar">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 10 18 20 6"/></svg>
           </button>
           <span class="item-emoji">${emojiHTML(em)}</span>
-          <div class="item-body">
+          <button class="item-body" data-act="edit" aria-label="Editar ${esc(it.nome)}">
             <div class="item-name">${esc(it.nome)}</div>
-            <div class="item-meta">${it.qtd > 1 ? it.qtd + " un" : "1 un"}</div>
-          </div>
+            <div class="item-meta">${meta}</div>
+          </button>
           ${it.comprado
             ? `<input class="item-price" data-act="price" inputmode="decimal" placeholder="R$" value="${it.preco != null ? String(it.preco).replace(".", ",") : ""}">`
-            : `<button class="item-del" data-act="del" aria-label="Remover">✕</button>`}
+            : ``}
+          <span class="item-go" data-act="edit" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
+          </span>
         </div>`;
       }).join("");
     }
@@ -121,6 +135,7 @@
     const act = e.target.closest("[data-act]") && e.target.closest("[data-act]").dataset.act;
     if (act === "toggle") { S.toggleItem(id); renderLista(); }
     else if (act === "del") { S.removeItem(id); renderLista(); }
+    else if (act === "edit") { openItemEdit(id); }
   }
   function onListInput(e) {
     const inp = e.target.closest(".item-price"); if (!inp) return;
@@ -147,6 +162,22 @@
     const em = v ? S.matchEmoji(v) : { char: "🛒", webp: "carrinho" };
     $("#addEmoji").innerHTML = emojiHTML(em);
   }
+
+  /* ---------- editar item (modal) ---------- */
+  let curItem = null;
+  function openItemEdit(id) {
+    const it = S.findItem(id); if (!it) return;
+    curItem = id;
+    $("#ieName").value = it.nome;
+    $("#ieQty").value = it.qtd;
+    $("#iePrice").value = it.preco != null ? String(it.preco).replace(".", ",") : "";
+    updateIeEmoji(); updateIeSub();
+    openModal("#itemModal");
+  }
+  function updateIeEmoji() { $("#ieEmoji").innerHTML = emojiHTML(S.matchEmoji($("#ieName").value || "")); }
+  const ieQtyVal = () => Math.max(1, Math.min(999, parseInt($("#ieQty").value, 10) || 1));
+  const iePriceVal = () => { const v = ($("#iePrice").value || "").replace(",", "."); return v === "" || isNaN(v) ? 0 : Math.max(0, +v); };
+  function updateIeSub() { $("#ieSub").textContent = money(ieQtyVal() * iePriceVal()); }
 
   /* =========================================================
      TELA: HISTÓRICO
@@ -454,11 +485,25 @@
     // nav tabs
     $$(".tab").forEach(t => t.addEventListener("click", () => switchScreen(t.dataset.scr)));
     // lista
-    $("#addBtn").addEventListener("click", addFromInput);
-    $("#addInput").addEventListener("keydown", e => { if (e.key === "Enter") addFromInput(); });
+    $("#addForm").addEventListener("submit", e => { e.preventDefault(); addFromInput(); });
+    $("#addBtn").addEventListener("mousedown", e => e.preventDefault()); // não tira o foco do input antes do clique (mobile)
     $("#addInput").addEventListener("input", updateAddEmoji);
     $("#listItems").addEventListener("click", onListClick);
     $("#listItems").addEventListener("input", onListInput);
+    // editar item (modal)
+    $("#ieName").addEventListener("input", updateIeEmoji);
+    $("#ieMinus").addEventListener("click", () => { $("#ieQty").value = Math.max(1, ieQtyVal() - 1); updateIeSub(); });
+    $("#iePlus").addEventListener("click", () => { $("#ieQty").value = Math.min(999, ieQtyVal() + 1); updateIeSub(); });
+    $("#ieQty").addEventListener("input", updateIeSub);
+    $("#iePrice").addEventListener("input", updateIeSub);
+    $("#ieSave").addEventListener("click", () => {
+      if (!curItem) return;
+      S.renameItem(curItem, $("#ieName").value);
+      S.setQty(curItem, ieQtyVal());
+      S.setPrice(curItem, ($("#iePrice").value || "").trim() === "" ? "" : iePriceVal());
+      closeModal("#itemModal"); renderLista(); renderHist(); renderMerc(); toast("Item atualizado ✏️");
+    });
+    $("#ieDelete").addEventListener("click", () => { if (curItem) { S.removeItem(curItem); closeModal("#itemModal"); renderLista(); toast("Item removido"); } });
     // finalizar
     $("#btnFinalizar").addEventListener("click", openFinalizar);
     $("#finConfirm").addEventListener("click", confirmFinalizar);

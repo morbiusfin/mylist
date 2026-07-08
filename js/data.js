@@ -233,6 +233,7 @@
   function toggleItem(id) { const i = findItem(id); if (i) { i.comprado = !i.comprado; if (!i.comprado) i.preco = null; save(); } return i; }
   function setPrice(id, v) { const i = findItem(id); if (i) { i.preco = (v === "" || v == null || isNaN(v)) ? null : Math.max(0, +v); save(); } return i; }
   function setQty(id, q) { const i = findItem(id); if (i) { i.qtd = Math.max(1, Math.min(999, parseInt(q, 10) || 1)); save(); } return i; }
+  function renameItem(id, nome) { const i = findItem(id); if (i && (nome || "").trim()) { i.nome = nome.trim(); save(); } return i; }
   function removeItem(id) { DATA.lista = DATA.lista.filter(i => i.id !== id); save(); }
   function clearLista() { DATA.lista = []; save(); }
 
@@ -300,6 +301,7 @@
     setOnSave(fn) { cbSave = fn; },
     replaceAll(d) { if (d && Array.isArray(d.compras)) { DATA.lista = Array.isArray(d.lista) ? d.lista : []; DATA.compras = d.compras; try { localStorage.setItem(KEY, JSON.stringify(DATA)); } catch (e) {} } },
     addItem, findItem, toggleItem, setPrice, setQty, removeItem, clearLista,
+    renameItem,
     finalizarCompra, deleteCompra, repetirCompra,
     comprasSorted, mercados, mercadoStats, monthTotal, grandTotal,
     matchEmoji, parseEntry, norm,

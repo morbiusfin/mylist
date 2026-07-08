@@ -38,14 +38,14 @@
         <div class="ls-cell ls-total"><span class="ls-num" id="lsTotal">R$ 0</span><span class="ls-lbl">parcial</span></div>
       </div>
 
-      <div class="add-bar">
+      <form id="addForm" class="add-bar" autocomplete="off">
         <span class="add-emoji" id="addEmoji"><img class="emoji-anim" src="emoji/carrinho.webp" alt="" aria-hidden="true" draggable="false" /></span>
         <input id="addInput" class="add-input" type="text" inputmode="text" enterkeyhint="done"
                placeholder="Adicionar item… (ex.: 2 tomate)" autocomplete="off" autocorrect="off" spellcheck="false" />
-        <button id="addBtn" class="add-btn" aria-label="Adicionar">
+        <button id="addBtn" class="add-btn" type="submit" aria-label="Adicionar">
           <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         </button>
-      </div>
+      </form>
 
       <div id="listItems" class="list-items"></div>
 
@@ -148,6 +148,39 @@
       <div class="sheet-foot sheet-foot-row">
         <button id="cmRepetir" class="btn-ghost">Repetir na lista</button>
         <button id="cmDelete" class="btn-danger">Excluir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: editar item ===== -->
+  <div id="itemModal" class="modal hidden">
+    <div class="sheet">
+      <div class="sheet-head">
+        <h2>Editar item</h2>
+        <button type="button" class="sheet-x" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div class="sheet-body">
+        <div class="ie-top">
+          <span class="ie-emoji" id="ieEmoji"></span>
+          <input id="ieName" class="field-input" type="text" placeholder="Nome do item" autocomplete="off" />
+        </div>
+        <label class="field">
+          <span class="field-lbl">Quantidade</span>
+          <div class="qty-stepper">
+            <button type="button" id="ieMinus" class="qty-btn" aria-label="Menos">−</button>
+            <input id="ieQty" class="qty-input" type="number" inputmode="numeric" min="1" max="999" />
+            <button type="button" id="iePlus" class="qty-btn" aria-label="Mais">+</button>
+          </div>
+        </label>
+        <label class="field">
+          <span class="field-lbl">Preço por unidade</span>
+          <input id="iePrice" class="field-input" inputmode="decimal" placeholder="R$ 0,00" autocomplete="off" />
+        </label>
+        <div class="ie-subtotal">Subtotal <b id="ieSub">R$ 0,00</b></div>
+      </div>
+      <div class="sheet-foot sheet-foot-row">
+        <button id="ieDelete" class="btn-danger">Excluir</button>
+        <button id="ieSave" class="btn-primary">Salvar</button>
       </div>
     </div>
   </div>

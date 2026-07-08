@@ -5,9 +5,17 @@
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
-  const APP_VERSION = "1.7.0";
-  const VERSION_NOTES = "Página de Insights + cards novos 📊";
+  const APP_VERSION = "1.8.0";
+  const VERSION_NOTES = "Layout fixo + preço com máscara + ícone 🍍";
   const CHANGELOG = [
+    {
+      v: "1.8.0",
+      itens: [
+        "Topo e a barra de baixo agora ficam <b>sempre fixos</b> — só a lista rola no meio 📱",
+        "Preço com <b>máscara automática</b>: é só digitar os números que ele vira <b>1.234,56</b> sozinho 💰",
+        "Novo <b>ícone do app</b>: um abacaxi 🍍"
+      ]
+    },
     {
       v: "1.7.0",
       itens: [
@@ -89,6 +97,11 @@
     if (v >= 1000) return "R$ " + (v / 1000).toFixed(v >= 10000 ? 0 : 1).replace(".", ",") + "k";
     return "R$ " + Math.round(v);
   };
+  // máscara de moeda: digita só números → 0,00 → 1.234,56 (dígitos = centavos)
+  const fmtCentsBR = (cents) => (cents / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  function maskMoney(el) { const d = (el.value || "").replace(/\D/g, ""); el.value = d ? fmtCentsBR(parseInt(d, 10)) : ""; }
+  const parseMoneyStr = (s) => { const d = (s || "").replace(/\D/g, ""); return d ? parseInt(d, 10) / 100 : 0; };
+  const fmtPrice = (n) => (n != null ? fmtCentsBR(Math.round(n * 100)) : "");
 
   /* ---------- emoji render (webp animado c/ fallback pro char) ---------- */
   function emojiFallback(img) {
@@ -143,7 +156,7 @@
             <div class="item-meta">${meta}</div>
           </button>
           ${it.comprado
-            ? `<input class="item-price" data-act="price" inputmode="decimal" placeholder="R$" value="${it.preco != null ? String(it.preco).replace(".", ",") : ""}">`
+            ? `<input class="item-price" data-act="price" inputmode="numeric" placeholder="R$" value="${fmtPrice(it.preco)}">`
             : ``}
           <span class="item-go" data-act="edit" aria-hidden="true">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
@@ -181,8 +194,9 @@
   }
   function onListInput(e) {
     const inp = e.target.closest(".item-price"); if (!inp) return;
+    maskMoney(inp);
     const id = e.target.closest(".item").dataset.id;
-    S.setPrice(id, (inp.value || "").replace(",", "."));
+    S.setPrice(id, inp.value.trim() === "" ? "" : parseMoneyStr(inp.value));
     // atualiza só o resumo (não re-renderiza pra não perder foco)
     const lista = S.raw.lista, done = lista.filter(i => i.comprado);
     $("#lsTotal").textContent = moneyShort(done.reduce((s, i) => s + (i.preco || 0) * i.qtd, 0));
@@ -214,13 +228,13 @@
     $("#ieName").value = it.nome;
     $("#ieQty").value = it.qtd;
     const pref = it.preco != null ? it.preco : S.lastPrice(it.nome);   // valor aprendido (não precisa digitar)
-    $("#iePrice").value = pref != null ? String(pref).replace(".", ",") : "";
+    $("#iePrice").value = fmtPrice(pref);
     updateIeEmoji(); updateIeSub();
     openModal("#itemModal");
   }
   function updateIeEmoji() { $("#ieEmoji").innerHTML = emojiHTML(S.matchEmoji($("#ieName").value || "")); }
   const ieQtyVal = () => Math.max(1, Math.min(999, parseInt($("#ieQty").value, 10) || 1));
-  const iePriceVal = () => { const v = ($("#iePrice").value || "").replace(",", "."); return v === "" || isNaN(v) ? 0 : Math.max(0, +v); };
+  const iePriceVal = () => parseMoneyStr($("#iePrice").value);
   function updateIeSub() { $("#ieSub").textContent = money(ieQtyVal() * iePriceVal()); }
 
   /* ---------- seleção / excluir vários + desfazer ---------- */
@@ -524,19 +538,10 @@
   /* =========================================================
      MODAIS / TOAST / NAV
   ========================================================= */
-  let scrollLockY = 0;
   function syncScrollLock() {
     const anyOpen = !!document.querySelector(".modal:not(.hidden)");
-    const locked = document.body.classList.contains("locked");
-    if (anyOpen && !locked) {
-      scrollLockY = window.scrollY || document.documentElement.scrollTop || 0;
-      document.body.style.top = "-" + scrollLockY + "px";
-      document.body.classList.add("locked");
-    } else if (!anyOpen && locked) {
-      document.body.classList.remove("locked");
-      document.body.style.top = "";
-      window.scrollTo(0, scrollLockY);
-    }
+    const main = document.querySelector(".app-main");
+    if (main) main.style.overflowY = anyOpen ? "hidden" : "auto";
   }
   function openModal(sel) { $(sel).classList.remove("hidden"); syncScrollLock(); }
   function closeModal(sel) { $(sel).classList.add("hidden"); syncScrollLock(); }
@@ -648,7 +653,7 @@
   function switchScreen(id) {
     $$(".screen").forEach(s => s.classList.toggle("active", s.id === id));
     $$(".tab").forEach(t => t.classList.toggle("active", t.dataset.scr === id));
-    window.scrollTo({ top: 0, behavior: "instant" in window ? "instant" : "auto" });
+    const m = document.querySelector(".app-main"); if (m) m.scrollTop = 0;
   }
 
   function refreshItemNames() {
@@ -683,7 +688,7 @@
     $("#ieMinus").addEventListener("click", () => { $("#ieQty").value = Math.max(1, ieQtyVal() - 1); updateIeSub(); });
     $("#iePlus").addEventListener("click", () => { $("#ieQty").value = Math.min(999, ieQtyVal() + 1); updateIeSub(); });
     $("#ieQty").addEventListener("input", updateIeSub);
-    $("#iePrice").addEventListener("input", updateIeSub);
+    $("#iePrice").addEventListener("input", () => { maskMoney($("#iePrice")); updateIeSub(); });
     $("#ieSave").addEventListener("click", () => {
       if (!curItem) return;
       S.renameItem(curItem, $("#ieName").value);

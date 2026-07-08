@@ -205,10 +205,10 @@ body.locked { position: fixed; left: 0; right: 0; width: 100%; overflow: hidden;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font: inherit;
   transition: color .15s;
 }
-.tab-ic { font-size: 22px; line-height: 1; filter: grayscale(.5) opacity(.7); transition: all .15s; }
+.tab-ic { font-size: 20px; line-height: 1; filter: grayscale(.4) opacity(.72); transition: all .18s; padding: 5px 18px; border-radius: 13px; border: 1px solid transparent; }
 .tab-lbl { font-size: 11px; font-weight: 600; }
 .tab.active { color: var(--green); }
-.tab.active .tab-ic { filter: none; transform: translateY(-1px) scale(1.08); }
+.tab.active .tab-ic { filter: none; background: var(--accent-soft); border-color: var(--accent-line); }
 
 /* ===== HISTÓRICO ===== */
 .hist-head { margin-bottom: 8px; }

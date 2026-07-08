@@ -5,9 +5,16 @@
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
-  const APP_VERSION = "1.9.0";
-  const VERSION_NOTES = "Insights por período + ícone 🍍 novo";
+  const APP_VERSION = "1.9.1";
+  const VERSION_NOTES = "Barra de abas nova + botão voltar redondo";
   const CHANGELOG = [
+    {
+      v: "1.9.1",
+      itens: [
+        "Barra de baixo repaginada: a aba <b>ativa</b> ganha um destaque arredondado 🎯",
+        "Botão <b>voltar</b> nas telas de Privacidade e Termos virou uma <b>bolinha</b> no canto ↩️"
+      ]
+    },
     {
       v: "1.9.0",
       itens: [
